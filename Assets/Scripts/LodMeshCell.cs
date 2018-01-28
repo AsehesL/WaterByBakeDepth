@@ -135,174 +135,48 @@ public class LodMeshCell
         int leftIndex, int rightIndex, int firstIndex, ref int index)
     {
         float z = m_CellY*m_Scale;
-        if (CurrentLod <= downLod)
+        int deltaLod = Mathf.Max(0, CurrentLod - downLod);
+        int step = (int) Mathf.Pow(2, deltaLod);
+        int sp = deltaLod*(deltaLod - 1);
+        int offset = deltaLod == 0 ? 0 : (int) Mathf.Pow(2, deltaLod - 1) - 1;
+        for (int i = 0; i <= xwidth; i += step)
         {
-            for (int i = 0; i <= xwidth; i += 1)
+            int ind = i/step;
+            if (i != 0 && i != xwidth)
             {
-                if (i != 0 && i != xwidth)
-                {
-                    float x = ((float)i) / xwidth * m_Scale + m_CellX * m_Scale;
-                    vlist.Add(new Vector3(x, 0, z));
-                }
-                if (i < xwidth - 1)
-                {
-                    if (i == 0)
-                        ilist.Add(leftIndex);
-                    else
-                        ilist.Add(index + i - 1);
-                    ilist.Add(firstIndex + i);
-                    ilist.Add(index + i + 1 - 1);
-                }
-                if (i == xwidth - 1)
-                {
-                    ilist.Add(rightIndex);
-                    ilist.Add(index + i - 2);
-                    ilist.Add(firstIndex + i - 1);
-                }
-                if (i > 0 && i < xwidth - 1)
-                {
-                    ilist.Add(index + i - 1);
-                    ilist.Add(firstIndex + i - 1);
-                    ilist.Add(firstIndex + i);
-                }
-                
+                float x = ((float) i)/xwidth*m_Scale + m_CellX*m_Scale;
+                vlist.Add(new Vector3(x, 0, z));
             }
-            index += (xwidth - 1);
-        }
-        else
-        {
-            int deltaLod = CurrentLod - downLod;
-            int step = (int)Mathf.Pow(2,deltaLod);
-            int sp = deltaLod*(deltaLod - 1);
-            int offset = (int)Mathf.Pow(2, deltaLod - 1) - 1;
-            for (int i = 0; i <= xwidth; i += step)
+            if (i != xwidth)
             {
-                int ind = i/ step;
-                if (i != 0 && i != xwidth)
-                {
-                    float x = ((float) i)/xwidth*m_Scale + m_CellX*m_Scale;
-                    vlist.Add(new Vector3(x, 0, z));
-                }
-                if (i != xwidth)
-                {
-                    if (i == 0)
-                        ilist.Add(leftIndex);
-                    else
-                        ilist.Add(index + ind - 1);
+                if (i == 0)
+                    ilist.Add(leftIndex);
+                else
+                    ilist.Add(index + ind - 1);
+                if (i == xwidth - 1)
+                    ilist.Add(firstIndex + xwidth - 2);
+                else
                     ilist.Add(firstIndex + i + offset);
-                    if (i == xwidth - step)
-                        ilist.Add(rightIndex);
-                    else
-                        ilist.Add(index + ind + 1 - 1);
-                }
-                if (i > 0 && i <= xwidth - step)
+                if (i == xwidth - step)
+                    ilist.Add(rightIndex);
+                else
+                    ilist.Add(index + ind + 1 - 1);
+            }
+            if (i > 0 && i <= xwidth - step)
+            {
+                if (deltaLod != 0 || i != xwidth - 1)
                 {
                     ilist.Add(index + ind - 1);
                     ilist.Add(firstIndex + i - 1);
                     ilist.Add(firstIndex + i);
                 }
+            }
+            if (deltaLod != 0)
+            {
                 if (i >= 0 && i < xwidth - step)
                 {
                     ilist.Add(firstIndex + i + sp);
-                    ilist.Add(firstIndex + i + sp+1);
-                    ilist.Add(index + ind + 1 - 1);
-                }
-               
-                if (i >= 0 && i <= xwidth - step)
-                {
-                    int bindex = i == 0 ? leftIndex : (index + ind - 1);
-                    int eindex = i == xwidth - step ? rightIndex : (index + ind);
-                    for (int j = 0; j < step-2; j++)
-                    {
-                        if (j < offset)
-                            ilist.Add(bindex);
-                        else
-                            ilist.Add(eindex);
-                        ilist.Add(firstIndex + i + j);
-                        ilist.Add(firstIndex + i + j + 1);
-                    }
-                    
-                }
-            }
-            index += (xwidth - 2)/ step;
-        }
-    }
-
-    private void UpdateMeshUpEdge(List<Vector3> vlist, List<int> ilist, int xwidth, int ywidth, int upLod,
-        int leftIndex, int rightIndex, int firstIndex, ref int index)
-    {
-        float z = m_CellY * m_Scale + m_Scale;
-        if (CurrentLod <= upLod)
-        {
-            for (int i = 0; i <= xwidth; i += 1)
-            {
-                if (i != 0 && i != xwidth)
-                {
-                    float x = ((float)i) / xwidth * m_Scale + m_CellX * m_Scale;
-                    vlist.Add(new Vector3(x, 0, z));
-                }
-                if (i < xwidth - 1)
-                {
-                    if (i == 0)
-                        ilist.Add(leftIndex);
-                    else
-                        ilist.Add(index + i - 1);
-                    ilist.Add(index + i + 1 - 1);
-                    ilist.Add(firstIndex + (xwidth - 1) * (ywidth - 2) + i);
-                }
-                if (i == xwidth - 1)
-                {
-                    ilist.Add(index + i - 1);
-                    ilist.Add(rightIndex);
-                    ilist.Add(firstIndex + (xwidth - 1) * (ywidth - 2) + i - 1);
-                }
-                if (i > 0 && i < xwidth - 1)
-                {
-                    ilist.Add(index + i - 1);
-                    ilist.Add(firstIndex + (xwidth - 1) * (ywidth - 2) + i);
-                    ilist.Add(firstIndex + (xwidth - 1) * (ywidth - 2) + i - 1);
-                }
-
-            }
-            index += (xwidth - 1);
-        }
-        else
-        {
-            int deltaLod = CurrentLod - upLod;
-            int step = (int)Mathf.Pow(2, deltaLod);
-            int sp = deltaLod * (deltaLod - 1);
-            int offset = (int)Mathf.Pow(2, deltaLod - 1) - 1;
-            for (int i = 0; i <= xwidth; i += step)
-            {
-                int ind = i / step;
-                if (i != 0 && i != xwidth)
-                {
-                    float x = ((float)i) / xwidth * m_Scale + m_CellX * m_Scale;
-                    vlist.Add(new Vector3(x, 0, z));
-                }
-                if (i != xwidth)
-                {
-                    if (i == 0)
-                        ilist.Add(leftIndex);
-                    else
-                        ilist.Add(index + ind - 1);
-                    if (i == xwidth - step)
-                        ilist.Add(rightIndex);
-                    else
-                        ilist.Add(index + ind + 1 - 1);
-                    ilist.Add(firstIndex + (xwidth - 1) * (ywidth - 2) + i + offset);
-
-                }
-                if (i > 0 && i <= xwidth - step)
-                {
-                    ilist.Add(index + ind - 1);
-                    ilist.Add(firstIndex + (xwidth - 1) * (ywidth - 2) + i);
-                    ilist.Add(firstIndex + (xwidth - 1) * (ywidth - 2) + i - 1);
-                }
-                if (i >= 0 && i < xwidth - step)
-                {
-                    ilist.Add(firstIndex + (xwidth - 1) * (ywidth - 2) + i + sp + 1);
-                    ilist.Add(firstIndex + (xwidth - 1) * (ywidth - 2) + i + sp);
+                    ilist.Add(firstIndex + i + sp + 1);
                     ilist.Add(index + ind + 1 - 1);
                 }
 
@@ -316,15 +190,84 @@ public class LodMeshCell
                             ilist.Add(bindex);
                         else
                             ilist.Add(eindex);
-                        ilist.Add(firstIndex + (xwidth - 1) * (ywidth - 2) + i + j + 1);
-                        ilist.Add(firstIndex + (xwidth - 1) * (ywidth - 2) + i + j);
+                        ilist.Add(firstIndex + i + j);
+                        ilist.Add(firstIndex + i + j + 1);
+                    }
+
+                }
+            }
+        }
+        index += deltaLod == 0 ? (xwidth - 1) : (xwidth - 2)/step;
+    }
+
+    private void UpdateMeshUpEdge(List<Vector3> vlist, List<int> ilist, int xwidth, int ywidth, int upLod,
+        int leftIndex, int rightIndex, int firstIndex, ref int index)
+    {
+        float z = m_CellY*m_Scale + m_Scale;
+        int deltaLod = CurrentLod - upLod;
+        int step = (int) Mathf.Pow(2, deltaLod);
+        int sp = deltaLod*(deltaLod - 1);
+        int offset = deltaLod == 0 ? 0 : (int) Mathf.Pow(2, deltaLod - 1) - 1;
+        for (int i = 0; i <= xwidth; i += step)
+        {
+            int ind = i/step;
+            if (i != 0 && i != xwidth)
+            {
+                float x = ((float) i)/xwidth*m_Scale + m_CellX*m_Scale;
+                vlist.Add(new Vector3(x, 0, z));
+            }
+            if (i != xwidth)
+            {
+                if (i == 0)
+                    ilist.Add(leftIndex);
+                else
+                    ilist.Add(index + ind - 1);
+                if (i == xwidth - step)
+                    ilist.Add(rightIndex);
+                else
+                    ilist.Add(index + ind + 1 - 1);
+                if (i == xwidth - 1)
+                    ilist.Add(firstIndex + (xwidth - 1)*(ywidth - 2) + xwidth - 2);
+                else
+                    ilist.Add(firstIndex + (xwidth - 1)*(ywidth - 2) + i + offset);
+            }
+            if (i > 0 && i <= xwidth - step)
+            {
+                if (deltaLod != 0 || i != xwidth - 1)
+                {
+                    ilist.Add(index + ind - 1);
+                    ilist.Add(firstIndex + (xwidth - 1)*(ywidth - 2) + i);
+                    ilist.Add(firstIndex + (xwidth - 1)*(ywidth - 2) + i - 1);
+                }
+            }
+            if (deltaLod != 0)
+            {
+                if (i >= 0 && i < xwidth - step)
+                {
+                    ilist.Add(firstIndex + (xwidth - 1)*(ywidth - 2) + i + sp + 1);
+                    ilist.Add(firstIndex + (xwidth - 1)*(ywidth - 2) + i + sp);
+                    ilist.Add(index + ind + 1 - 1);
+                }
+
+                if (i >= 0 && i <= xwidth - step)
+                {
+                    int bindex = i == 0 ? leftIndex : (index + ind - 1);
+                    int eindex = i == xwidth - step ? rightIndex : (index + ind);
+                    for (int j = 0; j < step - 2; j++)
+                    {
+                        if (j < offset)
+                            ilist.Add(bindex);
+                        else
+                            ilist.Add(eindex);
+                        ilist.Add(firstIndex + (xwidth - 1)*(ywidth - 2) + i + j + 1);
+                        ilist.Add(firstIndex + (xwidth - 1)*(ywidth - 2) + i + j);
 
                     }
 
                 }
             }
-            index += (xwidth - 2) / step;
         }
+        index += deltaLod == 0 ? (xwidth - 1) : (xwidth - 2)/step;
     }
 
     private void UpdateMeshLeftEdge(List<Vector3> vlist, List<int> ilist, int xwidth, int ywidth, int leftLod,

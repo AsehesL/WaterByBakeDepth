@@ -26,15 +26,15 @@ public class LodMesh
                 //int delta = Mathf.Clamp(Mathf.Abs(cx - i) + Mathf.Abs(cy - j), 0, 4);
                 m_Cells[i, j] = new LodMeshCell(0, 4, i, j, scale);
                 if (i == 3 && j == 3)
-                    m_Cells[i, j].CurrentLod = 3;
+                    m_Cells[i, j].CurrentLod = 0;
                 if (i == 2 && j == 3)
-                    m_Cells[i, j].CurrentLod = 1;
+                    m_Cells[i, j].CurrentLod = 4;
                 if (i == 4 && j == 3)
-                    m_Cells[i, j].CurrentLod = 1;
+                    m_Cells[i, j].CurrentLod = 4;
                 if (i == 3 && j == 2)
-                    m_Cells[i, j].CurrentLod = 1;
+                    m_Cells[i, j].CurrentLod = 4;
                 if (i == 3 && j == 4)
-                    m_Cells[i, j].CurrentLod = 1;
+                    m_Cells[i, j].CurrentLod = 0;
                 //m_Cells[i, j].CurrentLod = 4 - delta;
             }
         }
