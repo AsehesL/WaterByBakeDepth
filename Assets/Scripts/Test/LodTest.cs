@@ -5,8 +5,6 @@ using UnityEngine;
 public class LodTest : MonoBehaviour
 {
 
-    public Transform agent;
-
     public int xsize;
     public int zsize;
     public float scale;
