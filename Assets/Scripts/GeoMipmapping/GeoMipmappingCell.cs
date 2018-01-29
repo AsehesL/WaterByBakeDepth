@@ -40,7 +40,12 @@ public class GeoMipmappingCell
     private float m_MinY;
     private float m_MaxY;
 
-    private float[,] m_Heights; 
+    private float[,] m_Heights;
+
+    private int m_LeftLod;
+    private int m_RightLod;
+    private int m_UpLod;
+    private int m_DownLod;
 
     public GeoMipmappingCell(Transform parent, Material material, int cellX, int cellY, float cellSize)
     {
@@ -85,7 +90,7 @@ public class GeoMipmappingCell
     public void CalculateLod(Vector3 position)
     {
         float dis = Vector3.Distance(position, Center);
-        int l = (int) Mathf.Clamp(dis/m_CellSize, 0, 4);
+        int l = 4 - (int) Mathf.Clamp(dis/m_CellSize, 0, 4);
         CurrentLod = l;
     }
 
@@ -100,8 +105,14 @@ public class GeoMipmappingCell
 
     public void BuildMesh(int leftLod, int rightLod, int upLod, int downLod)
     {
+        if (leftLod != m_LeftLod || rightLod != m_RightLod || upLod != m_UpLod || downLod != m_DownLod)
+            m_IsMeshChanged = true;
         if (!m_IsMeshChanged)
             return;
+        m_LeftLod = leftLod;
+        m_RightLod = rightLod;
+        m_UpLod = upLod;
+        m_DownLod = downLod;
         m_IsMeshChanged = false;
         m_VertexList.Clear();
         m_IndexList.Clear();
@@ -111,7 +122,30 @@ public class GeoMipmappingCell
         UpdateMesh_InternalLod(xw, yw, leftLod, rightLod, upLod, downLod);
 
         m_Mesh.Clear();
+        List<Color> colors = new List<Color>();
+        for (int i = 0; i < m_VertexList.Count; i++)
+        {
+            if (CurrentLod == 4)
+            {
+                colors.Add(Color.red);
+            }else if (CurrentLod == 3)
+            {
+                colors.Add(new Color(1, 0.5f, 0));
+            }else if (CurrentLod == 2)
+            {
+                colors.Add(Color.yellow);
+            }else if (CurrentLod == 1)
+            {
+                colors.Add(Color.green);
+            }
+            else
+            {
+                colors.Add(Color.blue);
+            }
+        }
+
         m_Mesh.SetVertices(m_VertexList);
+        m_Mesh.SetColors(colors);
         m_Mesh.SetTriangles(m_IndexList, 0);
     }
 
@@ -191,6 +225,7 @@ public class GeoMipmappingCell
     private void UpdateMeshHorizontalEdge(float z, int hz, int edgeWidth, int neighborLod,
         int leftIndex, int rightIndex, int firstIndex, bool clockWise, ref int index)
     {
+        neighborLod = neighborLod < 0 ? CurrentLod : neighborLod;
         int deltaLod = Mathf.Max(0, CurrentLod - neighborLod);
         int step = (int)Mathf.Pow(2, deltaLod);
         int sp = deltaLod * (deltaLod - 1);
@@ -298,6 +333,7 @@ public class GeoMipmappingCell
     private void UpdateMeshVerticalEdge(float x, int hx, int xwidth, int ywidth, int neighborLod,
         int bottomIndex, int upIndex, int firstIndex, bool clockWise, ref int index)
     {
+        neighborLod = neighborLod < 0 ? CurrentLod : neighborLod;
         int deltaLod = Mathf.Max(0, CurrentLod - neighborLod);
         int step = (int)Mathf.Pow(2, deltaLod);
         int sp = deltaLod * (deltaLod - 1);
@@ -408,4 +444,5 @@ public class GeoMipmappingCell
     {
         return m_Heights[i, j];
     }
+
 }
