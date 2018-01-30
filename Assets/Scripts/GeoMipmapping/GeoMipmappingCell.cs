@@ -17,6 +17,11 @@ public class GeoMipmappingCell
         }
     }
 
+    public Bounds Bounds
+    {
+        get { return new Bounds(Center, new Vector3(m_CellSize, m_MaxY - m_MinY, m_CellSize)); }
+    }
+
     public Vector3 Center
     {
         get { return new Vector3(m_CenterX, m_MinY + (m_MaxY - m_MinY)*0.5f, m_CenterZ); }
@@ -107,6 +112,8 @@ public class GeoMipmappingCell
     {
         if (leftLod != m_LeftLod || rightLod != m_RightLod || upLod != m_UpLod || downLod != m_DownLod)
             m_IsMeshChanged = true;
+        if (!IsVisible())
+            return;
         if (!m_IsMeshChanged)
             return;
         m_LeftLod = leftLod;
@@ -147,6 +154,62 @@ public class GeoMipmappingCell
         m_Mesh.SetVertices(m_VertexList);
         m_Mesh.SetColors(colors);
         m_Mesh.SetTriangles(m_IndexList, 0);
+    }
+
+    private bool IsVisible()
+    {
+        Matrix4x4 matrix = Camera.main.projectionMatrix * Camera.main.worldToCameraMatrix;
+
+        int code =
+            ComputeOutCode(new Vector4(this.Bounds.center.x + this.Bounds.size.x / 2, this.Bounds.center.y + this.Bounds.size.y / 2,
+                this.Bounds.center.z + this.Bounds.size.z / 2, 1), matrix);
+
+
+        code &=
+            ComputeOutCode(new Vector4(this.Bounds.center.x - this.Bounds.size.x / 2, this.Bounds.center.y + this.Bounds.size.y / 2,
+                this.Bounds.center.z + this.Bounds.size.z / 2, 1), matrix);
+
+        code &=
+            ComputeOutCode(new Vector4(this.Bounds.center.x + this.Bounds.size.x / 2, this.Bounds.center.y - this.Bounds.size.y / 2,
+                this.Bounds.center.z + this.Bounds.size.z / 2, 1), matrix);
+
+        code &=
+            ComputeOutCode(new Vector4(this.Bounds.center.x - this.Bounds.size.x / 2, this.Bounds.center.y - this.Bounds.size.y / 2,
+                this.Bounds.center.z + this.Bounds.size.z / 2, 1), matrix);
+
+        code &=
+            ComputeOutCode(new Vector4(this.Bounds.center.x + this.Bounds.size.x / 2, this.Bounds.center.y + this.Bounds.size.y / 2,
+                this.Bounds.center.z - this.Bounds.size.z / 2, 1), matrix);
+
+        code &=
+            ComputeOutCode(new Vector4(this.Bounds.center.x - this.Bounds.size.x / 2, this.Bounds.center.y + this.Bounds.size.y / 2,
+                this.Bounds.center.z - this.Bounds.size.z / 2, 1), matrix);
+
+        code &=
+            ComputeOutCode(new Vector4(this.Bounds.center.x + this.Bounds.size.x / 2, this.Bounds.center.y - this.Bounds.size.y / 2,
+                this.Bounds.center.z - this.Bounds.size.z / 2, 1), matrix);
+
+        code &=
+            ComputeOutCode(new Vector4(this.Bounds.center.x - this.Bounds.size.x / 2, this.Bounds.center.y - this.Bounds.size.y / 2,
+                this.Bounds.center.z - this.Bounds.size.z / 2, 1), matrix);
+
+
+        if (code != 0) return false;
+
+        return true;
+    }
+
+    private static int ComputeOutCode(Vector4 pos, Matrix4x4 projection)
+    {
+        pos = projection * pos;
+        int code = 0;
+        if (pos.x < -pos.w) code |= 0x01;
+        if (pos.x > pos.w) code |= 0x02;
+        if (pos.y < -pos.w) code |= 0x04;
+        if (pos.y > pos.w) code |= 0x08;
+        if (pos.z < -pos.w) code |= 0x10;
+        if (pos.z > pos.w) code |= 0x20;
+        return code;
     }
 
     private void UpdateMesh_InternalLod(int xwidth, int ywidth, int leftLod, int rightLod, int upLod, int downLod)
