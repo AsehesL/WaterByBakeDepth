@@ -112,12 +112,12 @@ public class GeoMipmappingCell
     {
         if (leftLod != m_LeftLod || rightLod != m_RightLod || upLod != m_UpLod || downLod != m_DownLod)
             m_IsMeshChanged = true;
-        if (!IsVisible())
+        //if (!IsVisible())
         {
-            m_MeshRenderer.enabled = false;
-            return;
+           // m_MeshRenderer.enabled = false;
+            //return;
         }
-        else
+       // else
         {
             m_MeshRenderer.enabled = true;
         }
