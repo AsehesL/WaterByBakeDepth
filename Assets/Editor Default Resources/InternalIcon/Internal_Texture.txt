@@ -1,0 +1,44 @@
+AlphabeticalSorting
+VisibilityOn
+ScrollShadow
+LeftToRightShadow
+AudioMixerGroup Icon
+AudioMixerView Icon
+Favorite
+AudioMixerSnapshot Icon
+AudioMixerController Icon
+KnobCShape
+SceneAsset Icon
+SceneLoadIn
+SceneLoadOut
+SceneSave
+FilterByLabel
+FilterByType
+UnityEditor.HierarchyWindow
+Favorite Icon
+FolderFavorite Icon
+Search Icon
+CustomSorting
+console.warnicon.sml
+DefaultAsset Icon
+Mesh Icon
+DefaultSorting
+AudioListener Icon
+boo Script Icon
+CGProgram Icon
+cs Script Icon
+GUISkin Icon
+Js Script Icon
+Material Icon
+PhysicMaterial Icon
+PrefabNormal Icon
+Shader Icon
+TextAsset Icon
+GameManager Icon
+Animation Icon
+MetaFile Icon
+Font Icon
+AudioClip Icon
+Texture Icon
+MovieTexture Icon
+ScriptableObject Icon
