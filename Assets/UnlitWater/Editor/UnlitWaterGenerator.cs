@@ -34,6 +34,8 @@ public class UnlitWaterGenerator : MDIEditorWindow
     private float m_MaxDepth = 1;
     private float m_DepthPower = 1;
 
+    private float m_RotY = 0;
+
     private float m_MaxHeight = 1;
     private float m_MinHeight = 1;
 
@@ -60,22 +62,23 @@ public class UnlitWaterGenerator : MDIEditorWindow
 
     void OnSceneGUI(SceneView sceneView)
     {
-        if (m_TargetGameObject)
+        if ((int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject)
         {
-            Vector3 pos1 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + new Vector3(m_Size.x, 0, m_Size.y);
-            Vector3 pos2 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + new Vector3(m_Size.x, 0, -m_Size.y);
-            Vector3 pos3 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + new Vector3(-m_Size.x, 0, -m_Size.y);
-            Vector3 pos4 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + new Vector3(-m_Size.x, 0, m_Size.y);
+            Quaternion rot = Quaternion.Euler(0, m_RotY, 0);
+            Vector3 pos1 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +rot* new Vector3(m_Size.x, 0, m_Size.y);
+            Vector3 pos2 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(m_Size.x, 0, -m_Size.y);
+            Vector3 pos3 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(-m_Size.x, 0, -m_Size.y);
+            Vector3 pos4 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(-m_Size.x, 0, m_Size.y);
 
-            Vector3 pos5 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + new Vector3(m_Size.x, -m_MinHeight, m_Size.y);
-            Vector3 pos6 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + new Vector3(m_Size.x, -m_MinHeight, -m_Size.y);
-            Vector3 pos7 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + new Vector3(-m_Size.x, -m_MinHeight, -m_Size.y);
-            Vector3 pos8 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + new Vector3(-m_Size.x, -m_MinHeight, m_Size.y);
+            Vector3 pos5 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(m_Size.x, -m_MinHeight, m_Size.y);
+            Vector3 pos6 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(m_Size.x, -m_MinHeight, -m_Size.y);
+            Vector3 pos7 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(-m_Size.x, -m_MinHeight, -m_Size.y);
+            Vector3 pos8 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(-m_Size.x, -m_MinHeight, m_Size.y);
 
-            Vector3 pos9 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + new Vector3(m_Size.x, m_MaxHeight, m_Size.y);
-            Vector3 pos10 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + new Vector3(m_Size.x, m_MaxHeight, -m_Size.y);
-            Vector3 pos11 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + new Vector3(-m_Size.x, m_MaxHeight, -m_Size.y);
-            Vector3 pos12 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + new Vector3(-m_Size.x, m_MaxHeight, m_Size.y);
+            Vector3 pos9 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(m_Size.x, m_MaxHeight, m_Size.y);
+            Vector3 pos10 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(m_Size.x, m_MaxHeight, -m_Size.y);
+            Vector3 pos11 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(-m_Size.x, m_MaxHeight, -m_Size.y);
+            Vector3 pos12 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(-m_Size.x, m_MaxHeight, m_Size.y);
 
             Handles.DrawLine(pos1, pos2);
             Handles.DrawLine(pos2, pos3);
@@ -104,11 +107,16 @@ public class UnlitWaterGenerator : MDIEditorWindow
     {
         if (GUI.Button(new Rect(toolbar.x + 10, toolbar.y, 90, 15), "从文件加载深度图", GUIStyleCache.GetStyle("MiniToolBarButton")))
         {
-            //LoadTexture();
+            LoadTexture();
         }
         if (GUI.Button(new Rect(toolbar.x + 100, toolbar.y, 90, 15), "保存深度图", GUIStyleCache.GetStyle("MiniToolBarButton")))
         {
-            //LoadTexture();
+            SaveTexture();
+        }
+        if (m_Texture)
+        {
+            Rect previewRect = DrawPreviewTexture(rect);
+            GUI.DrawTexture(previewRect, m_Texture);
         }
     }
 
@@ -159,34 +167,45 @@ public class UnlitWaterGenerator : MDIEditorWindow
                 new GUIContent("下方高度", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "调整下方高度直到刚好超过水底最深处"),
                 m_MinHeight));
 
-        GUI.Label(new Rect(0, 60, position.width - 10, 17), "渲染设置");
+        m_LocalCenter = EditorGUI.Vector2Field(new Rect(0, 60, rect.width - 10, 40),
+            new GUIContent("位置偏移", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "调整渲染区域的坐标偏移"),
+            m_LocalCenter);
+        m_Size = EditorGUI.Vector2Field(new Rect(0, 100, rect.width - 10, 40),
+          new GUIContent("区域大小", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "调整渲染区域的区域大小"),
+          m_Size);
+        m_RotY = EditorGUI.FloatField(new Rect(0, 140, rect.width - 10, 17),
+            new GUIContent("Y轴旋转", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "调整渲染区域的Y轴旋转"),
+            m_RotY);
+
+        GUI.Label(new Rect(0, 160, position.width - 10, 17), "渲染设置");
         m_MaxDepth = Mathf.Max(0,
-           EditorGUI.FloatField(new Rect(0, 80, rect.width - 10, 17),
+           EditorGUI.FloatField(new Rect(0, 180, rect.width - 10, 17),
                new GUIContent("最大深度范围", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "控制渲染的最大深度范围，默认为1"),
                m_MaxDepth));
         m_DepthPower = Mathf.Max(0, 
-           EditorGUI.FloatField(new Rect(0, 100, rect.width - 10, 17),
+           EditorGUI.FloatField(new Rect(0, 200, rect.width - 10, 17),
                new GUIContent("深度增强", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "控制渲染深度的效果增强或减弱，默认为1表示不增强"),
                m_DepthPower));
 
-        if (GUI.Button(new Rect(0, 120, (rect.width - 10) / 2, 16), "渲染", GUIStyleCache.GetStyle("ButtonLeft")))
+        if (GUI.Button(new Rect(0, 220, (rect.width - 10) / 2, 16), "渲染", GUIStyleCache.GetStyle("ButtonLeft")))
         {
+            Render();
         }
+        GUI.enabled = m_Texture != null && GUI.enabled;
         if (m_AutoGenerateMesh)
         {
-            if (GUI.Button(new Rect((rect.width - 10) / 2, 120, (rect.width - 10) / 2, 16), "生成Mesh",
+            if (GUI.Button(new Rect((rect.width - 10) / 2, 220, (rect.width - 10) / 2, 16), "生成Mesh",
                 GUIStyleCache.GetStyle("ButtonRight")))
             {
-                //SaveTexture();
+                GenerateMesh();
             }
         }
         else
         {
-            //GUI.enabled = m_Texture != null;
-            if (GUI.Button(new Rect((rect.width - 10)/2, 120, (rect.width - 10)/2, 16), "应用到顶点色",
+            if (GUI.Button(new Rect((rect.width - 10)/2, 220, (rect.width - 10)/2, 16), "应用到顶点色",
                 GUIStyleCache.GetStyle("ButtonRight")))
             {
-                //SaveTexture();
+                ApplyToVertex();
             }
         }
 
@@ -219,6 +238,28 @@ public class UnlitWaterGenerator : MDIEditorWindow
                 EditorGUI.HelpBox(rect, "提示，该目标对象已经存在Mesh，自动生成新Mesh将覆盖原Mesh！", MessageType.Info);
                 break;
         }
+    }
+
+    private Rect DrawPreviewTexture(Rect rect)
+    {
+        float aspect = rect.width / rect.height;
+        float textaspect = m_Texture.width / m_Texture.height;
+        Rect previewRect = new Rect();
+        if (aspect > textaspect)
+        {
+            previewRect.x = rect.x + (rect.width - textaspect * rect.height) / 2;
+            previewRect.y = rect.y;
+            previewRect.width = textaspect * rect.height;
+            previewRect.height = rect.height;
+        }
+        else
+        {
+            previewRect.x = rect.x;
+            previewRect.y = rect.y + (rect.height - rect.width / textaspect) / 2;
+            previewRect.width = rect.width;
+            previewRect.height = rect.width / textaspect;
+        }
+        return previewRect;
     }
 
     /// <summary>
@@ -297,6 +338,74 @@ public class UnlitWaterGenerator : MDIEditorWindow
         if (c)
             c.sharedMesh = mesh;
         return true;
+    }
+
+    void Render()
+    {
+        if (m_TargetGameObject == null)
+        {
+            EditorUtility.DisplayDialog("错误", "请先设置目标网格", "确定");
+            return;
+        }
+        Quaternion transRot = Quaternion.Euler(90, m_RotY, 0);
+
+        Camera newCam = new GameObject("[TestCamera]").AddComponent<Camera>();
+        newCam.clearFlags = CameraClearFlags.SolidColor;
+        newCam.backgroundColor = Color.black;
+        newCam.orthographic = true;
+        newCam.aspect = m_Size.x / m_Size.y;
+        newCam.orthographicSize = m_Size.y;
+        newCam.nearClipPlane = -m_MaxHeight;
+        newCam.farClipPlane = m_MinHeight;
+        newCam.transform.position = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y);
+        newCam.transform.rotation = transRot;
+        newCam.enabled = false;
+
+        RenderTexture rt = new RenderTexture(4096, 4096, 24);
+        rt.hideFlags = HideFlags.HideAndDontSave;
+
+        bool isMeshActive = m_TargetGameObject.gameObject.active;
+        m_TargetGameObject.gameObject.SetActive(false);
+
+        newCam.targetTexture = rt;
+        Shader.SetGlobalFloat("depth", m_MaxDepth);
+        Shader.SetGlobalFloat("power", m_DepthPower);
+        Shader.SetGlobalFloat("height", m_TargetGameObject.transform.position.y);
+        Shader.SetGlobalFloat("minheight", m_MinHeight);
+        newCam.RenderWithShader(Shader.Find("Hidden/DepthMapRenderer"), "RenderType");
+
+        m_Texture = new Texture2D(rt.width, rt.height);
+
+        RenderTexture tp = RenderTexture.active;
+        RenderTexture.active = rt;
+        m_Texture.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+        m_Texture.Apply();
+        RenderTexture.active = tp;
+
+        DestroyImmediate(rt);
+        DestroyImmediate(newCam.gameObject);
+
+        m_TargetGameObject.gameObject.SetActive(isMeshActive);
+    }
+
+    void LoadTexture()
+    {
+        
+    }
+
+    void SaveTexture()
+    {
+        
+    }
+
+    void GenerateMesh()
+    {
+        
+    }
+
+    void ApplyToVertex()
+    {
+        
     }
 
     /// <summary>

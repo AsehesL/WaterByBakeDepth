@@ -5,27 +5,6 @@ Shader "Hidden/DepthMapRenderer"
 	Properties
 	{
 	}
-	CGINCLUDE
-
-	uniform float depthR;
-	uniform float powerR;
-	uniform float depthG;
-	uniform float powerG;
-	uniform float depthB;
-	uniform float powerB;
-	uniform float depthA;
-	uniform float powerA;
-
-	fixed4 GetDepth(float dp) {
-		fixed4 dep;
-		dep.r = pow(saturate(dp / depthR), powerR);
-		dep.g = pow(saturate(dp / depthG), powerA);
-		dep.b = pow(saturate(dp / depthB), powerG);
-		dep.a = pow(saturate(dp / depthA), powerB);
-		return dep;
-	}
-
-	ENDCG
 	SubShader
 	{
 		Tags { "RenderType"="Opaque" }
@@ -37,6 +16,11 @@ Shader "Hidden/DepthMapRenderer"
 			
 			#include "UnityCG.cginc"
 
+			uniform float depth;
+			uniform float power;
+			uniform float height;
+			uniform float minheight;
+
 			struct appdata
 			{
 				float4 vertex : POSITION;
@@ -45,20 +29,25 @@ Shader "Hidden/DepthMapRenderer"
 			struct v2f
 			{
 				float4 vertex : SV_POSITION;
-				float depth:TEXCOORD0;
+				float2 depth:TEXCOORD0;
 			};
 			
 			v2f vert (appdata v)
 			{
 				v2f o;
 				o.vertex = UnityObjectToClipPos(v.vertex);
-				o.depth = COMPUTE_DEPTH_01;
+				float4 worldPos = mul(unity_ObjectToWorld, v.vertex);
+
+				float h = worldPos.y - height;
+				o.depth = float2(saturate(-h / minheight), step(h, 0));
+
 				return o;
 			}
 			
-			fixed4 frag (v2f i) : SV_Target
+			float4 frag (v2f i) : SV_Target
 			{
-				return GetDepth(i.depth);
+				float dp = pow(saturate(i.depth.x / depth),power);
+				return float4(dp,i.depth.y,dp,1);
 			}
 			ENDCG
 		}
