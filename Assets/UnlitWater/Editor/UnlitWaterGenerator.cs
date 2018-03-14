@@ -24,8 +24,8 @@ public class UnlitWaterGenerator : MDIEditorWindow
 
     private TargetErrorDef m_TargetErrorDef;
 
-    private int m_CellSizeX;
-    private int m_CellSizeZ;
+    private int m_CellSizeX = 1;
+    private int m_CellSizeZ = 1;
     private int m_MaxLod;
 
     private Vector2 m_LocalCenter;
@@ -80,6 +80,8 @@ public class UnlitWaterGenerator : MDIEditorWindow
             Vector3 pos11 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(-m_Size.x, m_MaxHeight, -m_Size.y);
             Vector3 pos12 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(-m_Size.x, m_MaxHeight, m_Size.y);
 
+            Handles.color = Color.green;
+
             Handles.DrawLine(pos1, pos2);
             Handles.DrawLine(pos2, pos3);
             Handles.DrawLine(pos3, pos4);
@@ -99,6 +101,70 @@ public class UnlitWaterGenerator : MDIEditorWindow
             Handles.DrawLine(pos10, pos6);
             Handles.DrawLine(pos11, pos7);
             Handles.DrawLine(pos12, pos8);
+
+            if (m_AutoGenerateMesh)
+            {
+                
+
+                float deltax = m_Size.x*2/m_CellSizeX;
+                float deltaz = m_Size.y*2/m_CellSizeZ;
+
+                int dt = (int)Mathf.Pow(2, m_MaxLod);
+                float loddeltax = deltax / dt;
+                float loddeltaz = deltaz / dt;
+
+                for (int i = 0; i < m_CellSizeX; i++)
+                {
+                    if (i > 0)
+                    {
+                        Handles.color = Color.blue;
+                        Vector3 posb = m_TargetGameObject.transform.position +
+                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
+                                       rot*new Vector3(-m_Size.x + i*deltax, 0, m_Size.y);
+                        Vector3 posf = m_TargetGameObject.transform.position +
+                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
+                                       rot*new Vector3(-m_Size.x + i*deltax, 0, -m_Size.y);
+                        Handles.DrawLine(posb, posf);
+                    }
+                    Handles.color = Color.yellow;
+                    for (int j = 1; j < dt; j++)
+                    {
+                        Vector3 posb = m_TargetGameObject.transform.position +
+                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
+                                       rot * new Vector3(-m_Size.x + i * deltax + j * loddeltax, 0, m_Size.y);
+                        Vector3 posf = m_TargetGameObject.transform.position +
+                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
+                                       rot * new Vector3(-m_Size.x + i * deltax + j * loddeltax, 0, -m_Size.y);
+                        Handles.DrawLine(posb, posf);
+                    }
+                }
+
+                for (int i = 0; i < m_CellSizeZ; i++)
+                {
+                    if (i > 0)
+                    {
+                        Handles.color = Color.blue;
+                        Vector3 posb = m_TargetGameObject.transform.position +
+                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
+                                       rot*new Vector3(-m_Size.x, 0, -m_Size.y + i*deltaz);
+                        Vector3 posf = m_TargetGameObject.transform.position +
+                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
+                                       rot*new Vector3(m_Size.x, 0, -m_Size.y + i*deltaz);
+                        Handles.DrawLine(posb, posf);
+                    }
+                    Handles.color = Color.yellow;
+                    for (int j = 1; j < dt; j++)
+                    {
+                        Vector3 posb = m_TargetGameObject.transform.position +
+                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
+                                       rot * new Vector3(-m_Size.x, 0, -m_Size.y + i * deltaz + j * loddeltaz);
+                        Vector3 posf = m_TargetGameObject.transform.position +
+                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
+                                       rot * new Vector3(m_Size.x, 0, -m_Size.y + i * deltaz + j * loddeltaz);
+                        Handles.DrawLine(posb, posf);
+                    }
+                }
+            }
         }
     }
 
@@ -273,7 +339,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
             return;
         }
         MeshFilter mf = m_TargetGameObject.GetComponent<MeshFilter>();
-        if (mf && IsMeshFromModelFile(mf.sharedMesh))
+        if (mf && mf.sharedMesh && IsMeshFromModelFile(mf.sharedMesh))
         {
             m_TargetErrorDef = TargetErrorDef.MeshFromModel;
             return;
@@ -390,17 +456,56 @@ public class UnlitWaterGenerator : MDIEditorWindow
 
     void LoadTexture()
     {
-        
+        string path = EditorUtility.OpenFilePanel("读取深度图", "", "png");
+        if (string.IsNullOrEmpty(path))
+            return;
+        byte[] buffer = System.IO.File.ReadAllBytes(path);
+        m_Texture = new Texture2D(1, 1);
+        m_Texture.LoadImage(buffer);
+        m_Texture.Apply();
     }
 
     void SaveTexture()
     {
-        
+        if (m_Texture == null)
+            return;
+        {
+            string path = EditorUtility.SaveFilePanel("保存", Application.dataPath, "", "png");
+            if (!string.IsNullOrEmpty(path))
+            {
+                byte[] buffer = m_Texture.EncodeToPNG();
+                System.IO.File.WriteAllBytes(path, buffer);
+                AssetDatabase.Refresh();
+            }
+        }
     }
 
     void GenerateMesh()
     {
-        
+        string savePath = EditorUtility.SaveFilePanel("保存Mesh路径", "Assets/", "New Water Mesh", "asset");
+        if (string.IsNullOrEmpty(savePath))
+            return;
+        savePath = FileUtil.GetProjectRelativePath(savePath);
+        if (string.IsNullOrEmpty(savePath))
+            return;
+        if (m_Texture == null)
+            return;
+        if (m_TargetGameObject == null)
+            return;
+        Mesh mesh = UnlitWaterMesh.GenerateMesh(m_Texture, m_CellSizeX, m_CellSizeZ, m_Size.x*2, m_Size.y*2,
+            - m_Size.x - m_LocalCenter.x, - m_Size.y - m_LocalCenter.y,
+            m_MaxLod);
+        MeshFilter mf = m_TargetGameObject.GetComponent<MeshFilter>();
+        if (!mf)
+            mf = m_TargetGameObject.AddComponent<MeshFilter>();
+        mf.sharedMesh = mesh;
+
+        savePath = AssetDatabase.GenerateUniqueAssetPath(savePath);
+        AssetDatabase.CreateAsset(mesh, savePath);
+
+        MeshCollider mc = m_TargetGameObject.GetComponent<MeshCollider>();
+        if(mc)
+            mc.sharedMesh = mesh;
     }
 
     void ApplyToVertex()
