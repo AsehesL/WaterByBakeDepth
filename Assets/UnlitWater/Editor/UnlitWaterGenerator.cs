@@ -19,6 +19,21 @@ public class UnlitWaterGenerator : MDIEditorWindow
         NoMesh,
     }
 
+    private enum PaintVertexType
+    {
+        点,//对单个顶点着色
+        三角//对三角面着色
+    }
+
+    private enum PaintVertexChannel
+    {
+        None,
+        R,
+        G,
+        B,
+        A,
+    }
+
     private GameObject m_TargetGameObject;
     private bool m_AutoGenerateMesh;
 
@@ -39,7 +54,16 @@ public class UnlitWaterGenerator : MDIEditorWindow
     private float m_MaxHeight = 1;
     private float m_MinHeight = 1;
 
+    private PaintVertexType m_PaintVertexType;
+    private PaintVertexChannel m_PaintVertexChannel;
+
     private Texture2D m_Texture;
+
+    private Transform m_LightTransform;
+
+    private bool m_PreviewVertexColor;
+
+    private float m_PaintVertexAlpha;
 
     [MenuItem("GameObject/UnlitWater/Create UnlitWater", false, 2500)]
     static void Init()
@@ -189,6 +213,8 @@ public class UnlitWaterGenerator : MDIEditorWindow
     [EWSubWindow("Mesh设置", EWSubWindowIcon.MeshRenderer)]
     private void DrawMeshSetting(Rect rect)
     {
+        bool guienable = GUI.enabled;
+        GUI.enabled = guienable && m_PaintVertexChannel == PaintVertexChannel.None;
         GUI.BeginGroup(new Rect(rect.x + 5, rect.y + 5, rect.width - 10, rect.height - 10));
         EditorGUI.BeginChangeCheck();
         m_TargetGameObject =
@@ -201,14 +227,14 @@ public class UnlitWaterGenerator : MDIEditorWindow
             CalculateAreaInfo(m_TargetGameObject, ref m_LocalCenter, ref m_Size);
         }
 
-        GUI.enabled = m_AutoGenerateMesh;
+        GUI.enabled = guienable && m_AutoGenerateMesh;
         m_Size.x = Mathf.Max(0.01f, EditorGUI.FloatField(new Rect(0, 40, rect.width - 10, 17), "Width", m_Size.x));
         m_Size.y = Mathf.Max(0.01f, EditorGUI.FloatField(new Rect(0, 60, rect.width - 10, 17), "Height", m_Size.y));
         m_CellSizeX = Mathf.Max(1, EditorGUI.IntField(new Rect(0, 80, rect.width - 10, 17), "CellWidth", m_CellSizeX));
         m_CellSizeZ = Mathf.Max(1, EditorGUI.IntField(new Rect(0, 100, rect.width - 10, 17), "CellHeight", m_CellSizeZ));
         m_MaxLod = EditorGUI.IntSlider(new Rect(0, 120, rect.width - 10, 17), "最大Lod", m_MaxLod, 0, 8);
 
-        GUI.enabled = true;
+        GUI.enabled = guienable;
 
         if (m_TargetErrorDef != TargetErrorDef.None)
         {
@@ -220,9 +246,11 @@ public class UnlitWaterGenerator : MDIEditorWindow
     [EWSubWindow("烘焙设置", EWSubWindowIcon.Setting)]
     private void DrawBakeSetting(Rect rect)
     {
+        bool guienable = GUI.enabled;
+        GUI.enabled = guienable && m_PaintVertexChannel == PaintVertexChannel.None;
         GUI.BeginGroup(new Rect(rect.x + 5, rect.y + 5, rect.width - 10, rect.height - 10));
 
-        GUI.enabled = (int) m_TargetErrorDef <= (int) TargetErrorDef.WillReplaceMesh && m_TargetGameObject;
+        GUI.enabled = (int) m_TargetErrorDef <= (int) TargetErrorDef.WillReplaceMesh && m_TargetGameObject && guienable;
         GUI.Label(new Rect(0, 0, position.width - 10, 17), "区域设置");
         m_MaxHeight = Mathf.Max(0,
             EditorGUI.FloatField(new Rect(0, 20, rect.width - 10, 17),
@@ -257,7 +285,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
         {
             Render();
         }
-        GUI.enabled = m_Texture != null && GUI.enabled;
+        GUI.enabled = m_Texture != null && guienable;
         if (m_AutoGenerateMesh)
         {
             if (GUI.Button(new Rect((rect.width - 10) / 2, 220, (rect.width - 10) / 2, 16), "生成Mesh",
@@ -275,14 +303,84 @@ public class UnlitWaterGenerator : MDIEditorWindow
             }
         }
 
-        GUI.enabled = true;
+        GUI.enabled = guienable;
         GUI.EndGroup();
     }
 
-    [EWSubWindow("顶点绘制设置", EWSubWindowIcon.Material)]
+    [EWSubWindow("材质设置", EWSubWindowIcon.Material)]
     private void DrawSetting(Rect rect)
     {
-        
+        bool guienable = GUI.enabled;
+        GUI.enabled = (int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject && guienable && m_PaintVertexChannel == PaintVertexChannel.None;
+        GUI.BeginGroup(new Rect(rect.x + 5, rect.y + 5, rect.width - 10, rect.height - 10));
+
+        GUI.Label(new Rect(0,0,rect.width-10,17), "灯光");
+        m_LightTransform =
+            (Transform)
+                EditorGUI.ObjectField(new Rect(0, 20, (rect.width-10)*0.8f, 17),"平行光", m_LightTransform, typeof(Transform),
+                    true);
+        if (GUI.Button(new Rect((rect.width-10)*0.8f, 20, (rect.width - 10)*0.2f, 17), "烘焙光照方向"))
+        {
+        }
+
+        GUI.enabled = (int) m_TargetErrorDef <= (int) TargetErrorDef.WillReplaceMesh && m_TargetGameObject && guienable;
+
+        GUI.Label(new Rect(0, 40, rect.width - 10, 17), "顶点绘制");
+
+        GUI.Box(new Rect(0, 60, rect.width - 10, 90), "", GUI.skin.FindStyle("WindowBackground"));
+
+        GUI.Label(new Rect(5, 65, 100, 20), "选择绘制通道");
+
+        EditorGUI.BeginChangeCheck();
+        m_PaintVertexChannel = EditorGUI.Toggle(new Rect(rect.width - 15 - 280, 65, 70, 20),
+            m_PaintVertexChannel == PaintVertexChannel.R, GUI.skin.FindStyle("ButtonLeft"))
+            ? PaintVertexChannel.R
+            : m_PaintVertexChannel;
+        GUI.Label(new Rect(rect.width - 15 - 280, 65, 70, 20), "R:深度");
+
+        m_PaintVertexChannel = EditorGUI.Toggle(new Rect(rect.width - 15 - 210, 65, 70, 20),
+            m_PaintVertexChannel == PaintVertexChannel.G, GUI.skin.FindStyle("ButtonMid"))
+            ? PaintVertexChannel.G
+            : m_PaintVertexChannel;
+        GUI.Label(new Rect(rect.width - 15 - 210, 65, 70, 20), "G:浪花透明");
+
+        m_PaintVertexChannel = EditorGUI.Toggle(new Rect(rect.width - 15 - 140, 65, 70, 20),
+            m_PaintVertexChannel == PaintVertexChannel.B, GUI.skin.FindStyle("ButtonMid"))
+            ? PaintVertexChannel.B
+            : m_PaintVertexChannel;
+        GUI.Label(new Rect(rect.width - 15 - 140, 65, 70, 20), "B:海浪波纹透明");
+
+        m_PaintVertexChannel = EditorGUI.Toggle(new Rect(rect.width - 15 - 70, 65, 70, 20),
+            m_PaintVertexChannel == PaintVertexChannel.A, GUI.skin.FindStyle("ButtonRight"))
+            ? PaintVertexChannel.A
+            : m_PaintVertexChannel;
+        GUI.Label(new Rect(rect.width - 15 - 70, 65, 70, 20), "A:整体透明");
+        if (EditorGUI.EndChangeCheck())
+        {
+            if (m_PaintVertexChannel != PaintVertexChannel.None)
+            {
+                Vector4 vertexMask = new Vector4(m_PaintVertexChannel == PaintVertexChannel.R ? 1 : 0,
+                    m_PaintVertexChannel == PaintVertexChannel.G ? 1 : 0,
+                    m_PaintVertexChannel == PaintVertexChannel.B ? 1 : 0,
+                    m_PaintVertexChannel == PaintVertexChannel.A ? 1 : 0);
+                //m_BrushMaterial.SetVector("_VertexMask", vertexMask);
+            }
+        }
+
+        m_PreviewVertexColor = EditorGUI.Toggle(new Rect(5, 85, rect.width - 20, 20),
+            "预览顶点色",
+            m_PreviewVertexColor);
+
+        m_PaintVertexAlpha = EditorGUI.Slider(new Rect(5, 105, rect.width - 20, 20),
+            "绘制透明度", m_PaintVertexAlpha, 0, 1);
+        m_PaintVertexType =
+            (PaintVertexType)
+                EditorGUI.EnumPopup(new Rect(5, 125, rect.width - 20, 20), "笔刷类型",
+                    m_PaintVertexType);
+
+
+        GUI.EndGroup();
+        GUI.enabled = guienable;
     }
 
     private void DrawTargetErrorHelpBox(Rect rect)
@@ -396,7 +494,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
         mesh.uv3 = mf.sharedMesh.uv3;
         mesh.uv4 = mf.sharedMesh.uv4;
 
-        savePath = AssetDatabase.GenerateUniqueAssetPath(savePath);
+        //savePath = AssetDatabase.GenerateUniqueAssetPath(savePath);
         AssetDatabase.CreateAsset(mesh, savePath);
 
         mf.sharedMesh = mesh;
@@ -492,15 +590,15 @@ public class UnlitWaterGenerator : MDIEditorWindow
             return;
         if (m_TargetGameObject == null)
             return;
-        Mesh mesh = UnlitWaterMesh.GenerateMesh(m_Texture, m_CellSizeX, m_CellSizeZ, m_Size.x*2, m_Size.y*2,
-            - m_Size.x - m_LocalCenter.x, - m_Size.y - m_LocalCenter.y,
+        Mesh mesh = UnlitWaterMeshGenerator.GenerateMesh(m_Texture, m_CellSizeX, m_CellSizeZ, m_Size.x*2, m_Size.y*2,
+            - m_Size.x + m_LocalCenter.x, - m_Size.y + m_LocalCenter.y,
             m_MaxLod);
         MeshFilter mf = m_TargetGameObject.GetComponent<MeshFilter>();
         if (!mf)
             mf = m_TargetGameObject.AddComponent<MeshFilter>();
         mf.sharedMesh = mesh;
 
-        savePath = AssetDatabase.GenerateUniqueAssetPath(savePath);
+        //savePath = AssetDatabase.GenerateUniqueAssetPath(savePath);
         AssetDatabase.CreateAsset(mesh, savePath);
 
         MeshCollider mc = m_TargetGameObject.GetComponent<MeshCollider>();
