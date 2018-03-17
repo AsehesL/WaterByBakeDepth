@@ -135,15 +135,30 @@ public static class UnlitWaterMeshGenerator
         /// <summary>
         /// 顶点数据
         /// </summary>
-        private struct VertexData
+        private class VertexData
         {
             public Vector3 vertex;
+            public Vector2 uv;
             public int index;
 
-            public VertexData(Vector3 vertex, int index)
+            public VertexData(Vector3 vertex, float beginx, float beginy, int width, int height, float cellSizeX, float cellSizeY)
             {
                 this.vertex = vertex;
-                this.index = index;
+                this.index = -1;
+
+                uv = new Vector2();
+                uv.x = (vertex.x - beginx) / ((width - 1) * cellSizeX);
+                uv.y = (vertex.z - beginy) / ((height - 1) * cellSizeY);
+            }
+
+            public bool IsVisible(Texture2D tex, float compare)
+            {
+                int x = (int)(uv.x * tex.width);
+                int y = (int)(uv.y * tex.height);
+                Color col = tex.GetPixel(x, y);
+                if (col.g < compare)
+                    return false;
+                return true;
             }
         }
 
@@ -168,7 +183,7 @@ public static class UnlitWaterMeshGenerator
         private float m_BeginX;
         private float m_BeginY;
 
-        private int m_Count = 0;
+        //private int m_Count = 0;
 
         public UnlitWaterMeshVertexCache(int width, int height, float cellSizeX, float cellSizeY, float beginX, float beginY)
         {
@@ -194,8 +209,8 @@ public static class UnlitWaterMeshGenerator
             int k = GetVertexKey(vertex);
             if (!m_Vertexs.ContainsKey(k))//确保不记录相同k的顶点
             {
-                m_Vertexs.Add(k, new VertexData(vertex, m_Count));
-                m_Count += 1;
+                m_Vertexs.Add(k, new VertexData(vertex, m_BeginX, m_BeginY, m_Width, m_Height, m_CellSizeX, m_CellSizeY));
+                //m_Count += 1;
             }
         }
 
@@ -214,17 +229,28 @@ public static class UnlitWaterMeshGenerator
         /// <returns></returns>
         public Mesh Apply(Texture2D texture)
         {
-            Vector3[] vlist = new Vector3[m_Count];
-            Vector2[] ulist = new Vector2[m_Count];
+            List<Vector3> vlist = new List<Vector3>();
+            List<Vector2> ulist = new List<Vector2>();
             List<int> ilist = new List<int>();
 
             foreach (var dt in m_Vertexs)
             {
-                vlist[dt.Value.index] = dt.Value.vertex;
                 Vector2 uv = new Vector2();
                 uv.x = (dt.Value.vertex.x - m_BeginX)/((m_Width - 1)*m_CellSizeX);
                 uv.y = (dt.Value.vertex.z - m_BeginY) / ((m_Height - 1) * m_CellSizeY);
-                ulist[dt.Value.index] = uv;
+
+                bool isVisible = dt.Value.IsVisible(texture, 0.1f);
+                if (!isVisible)
+                {
+                    continue;
+                }
+                dt.Value.index = vlist.Count;
+
+                vlist.Add(dt.Value.vertex);
+                ulist.Add(uv);
+
+                //vlist[dt.Value.index] = dt.Value.vertex;
+                //ulist[dt.Value.index] = uv;
             }
 
             for (int i = 0; i < m_IndexList.Count; i+=3)
@@ -237,31 +263,39 @@ public static class UnlitWaterMeshGenerator
                 int k2 = GetVertexKey(vertex2);
                 if (!m_Vertexs.ContainsKey(k0) || !m_Vertexs.ContainsKey(k1) || !m_Vertexs.ContainsKey(k2))
                     continue;
+                //if (!m_Vertexs.ContainsKey(k))
+                //    continue;
+                //var dt = m_Vertexs[k];
+                //if (dt.index < 0)
+                //    continue;
                 var dt0 = m_Vertexs[k0];
                 var dt1 = m_Vertexs[k1];
                 var dt2 = m_Vertexs[k2];
+                if (dt0.index < 0 || dt1.index < 0 || dt2.index < 0)
+                    continue;
 
                 var uv0 = ulist[dt0.index];
                 var uv1 = ulist[dt1.index];
                 var uv2 = ulist[dt2.index];
-
-                if (!IsVisible(texture, uv0, 0.1f))
-                    continue;
-                if (!IsVisible(texture, uv1, 0.1f))
-                    continue;
-                if (!IsVisible(texture, uv2, 0.1f))
-                    continue;
+                
+                //if (!IsVisible(texture, uv0, 0.1f))
+                //    continue;
+                //if (!IsVisible(texture, uv1, 0.1f))
+                //    continue;
+                //if (!IsVisible(texture, uv2, 0.1f))
+                //    continue;
 
                 //ilist[i] = dt.index;
                 ilist.Add(dt0.index);
                 ilist.Add(dt1.index);
                 ilist.Add(dt2.index);
+                //ilist.Add(dt.index);
             }
 
             Mesh mesh = new Mesh();
-            mesh.vertices = vlist;
-            mesh.uv = ulist;
-            mesh.triangles = ilist.ToArray();
+            mesh.SetVertices(vlist);
+            mesh.SetUVs(0, ulist);
+            mesh.SetTriangles(ilist, 0);
             //mesh.SetVertices(m_VertexList);
             //mesh.SetTriangles(m_IndexList, 0);
             mesh.RecalculateNormals();
@@ -275,16 +309,6 @@ public static class UnlitWaterMeshGenerator
             int y = Mathf.FloorToInt((vertex.z - m_BeginY - m_CellSizeY *0.5f) / m_CellSizeY);
             int k = y * m_Width + x;
             return k;
-        }
-
-        private bool IsVisible(Texture2D tex, Vector2 uv, float compare)
-        {
-            int x = (int) (uv.x*tex.width);
-            int y = (int)(uv.y * tex.height);
-            Color col = tex.GetPixel(x, y);
-            if (col.g < compare)
-                return false;
-            return true;
         }
     }
 
