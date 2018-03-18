@@ -145,6 +145,7 @@ public static class UnlitWaterMeshGenerator
             public Vector2 uv;
             public Color color;
             public int index;
+            public bool visible;
 
             private float m_BeginX;
             private float m_BeginY;
@@ -170,41 +171,42 @@ public static class UnlitWaterMeshGenerator
                 m_CellSizeY = cellSizeY;
             }
 
-            public void RefreshColor(Texture2D tex)
+            public void Refresh(Texture2D tex, int samples)
             {
                 Color col = GetColor(tex, uv);
                 color = new Color(col.r, 1, 1, 1);
-            }
 
-            public bool IsVisible(Texture2D tex, int samples)
-            {
-                bool visible = IsVisibleInternal(tex, uv);
+                visible = col.g >= kInVisibleColor;
+                float height = col.r;
 
                 for (int i = 1; i < samples; i++)
                 {
                     Vector2 spuv = new Vector2();
-                    spuv.x = uv.x + ((float) i)/(m_Width - 1);
-                    spuv.y = uv.y + ((float) i)/(m_Width - 1);
-                    if (IsVisibleInternal(tex, spuv))
+                    
+                    spuv.x = uv.x + ((float)i) / (m_Width - 1);
+                    spuv.y = uv.y + ((float)i) / (m_Width - 1);
+                    col = GetColor(tex, spuv);
+                    if (col.g >= kInVisibleColor)
                         visible = true;
 
-                    spuv.x = uv.x - ((float) i)/(m_Width - 1);
-                    spuv.y = uv.y + ((float) i)/(m_Width - 1);
-                    if (IsVisibleInternal(tex, spuv))
+                    spuv.x = uv.x - ((float)i) / (m_Width - 1);
+                    spuv.y = uv.y + ((float)i) / (m_Width - 1);
+                    col = GetColor(tex, spuv);
+                    if (col.g >= kInVisibleColor)
                         visible = true;
 
-                    spuv.x = uv.x + ((float) i)/(m_Width - 1);
-                    spuv.y = uv.y - ((float) i)/(m_Width - 1);
-                    if (IsVisibleInternal(tex, spuv))
+                    spuv.x = uv.x + ((float)i) / (m_Width - 1);
+                    spuv.y = uv.y - ((float)i) / (m_Width - 1);
+                    col = GetColor(tex, spuv);
+                    if (col.g >= kInVisibleColor)
                         visible = true;
 
-                    spuv.x = uv.x - ((float) i)/(m_Width - 1);
-                    spuv.y = uv.y - ((float) i)/(m_Width - 1);
-                    if (IsVisibleInternal(tex, spuv))
+                    spuv.x = uv.x - ((float)i) / (m_Width - 1);
+                    spuv.y = uv.y - ((float)i) / (m_Width - 1);
+                    col = GetColor(tex, spuv);
+                    if (col.g >= kInVisibleColor)
                         visible = true;
                 }
-
-                return visible;
             }
 
             private Color GetColor(Texture2D tex, Vector2 uv)
@@ -223,13 +225,6 @@ public static class UnlitWaterMeshGenerator
                 return col;
             }
 
-            private bool IsVisibleInternal(Texture2D tex, Vector2 uv)
-            {
-                Color col = GetColor(tex, uv);
-                if (col.g >= kInVisibleColor)
-                    return true;
-                return false;
-            }
         }
 
         /// <summary>
@@ -307,18 +302,16 @@ public static class UnlitWaterMeshGenerator
             foreach (var dt in m_Vertexs)
             {
 
-                bool isVisible = dt.Value.IsVisible(texture, samples);
-                if (!isVisible)
+                dt.Value.Refresh(texture, samples);
+                if (!dt.Value.visible)
                 {
                     continue;
                 }
-                dt.Value.RefreshColor(texture);
                 dt.Value.index = vlist.Count;
 
                 vlist.Add(dt.Value.vertex);
                 ulist.Add(dt.Value.uv);
                 clist.Add(dt.Value.color);
-
             }
 
             for (int i = 0; i < m_IndexList.Count; i+=3)

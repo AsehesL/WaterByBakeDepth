@@ -86,6 +86,8 @@ public class UnlitWaterGenerator : MDIEditorWindow
     private float m_MaxHeight = 1;
     private float m_MinHeight = 1;
 
+    private bool m_IsMouseDragging;
+
     private PaintVertexType m_PaintVertexType;
     private PaintVertexChannel m_PaintVertexChannel;
 
@@ -240,6 +242,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
                 if (RayCastInSceneView(m_TargetGameObject, out hit))
                 {
                     PaintVertexColor(m_TargetGameObject, hit.point, hit.triangleIndex);
+                    DrawVertexColor(m_TargetGameObject, hit.point, hit.triangleIndex);
                 }
             }
         }
@@ -432,21 +435,22 @@ public class UnlitWaterGenerator : MDIEditorWindow
 
         GUILayout.EndHorizontal();
 
+        m_PaintVertexType =
+    (PaintVertexType)
+        EditorGUILayout.EnumPopup("笔刷类型", m_PaintVertexType);
+
         m_PaintVertexAlpha = EditorGUILayout.Slider("绘制强度", m_PaintVertexAlpha, 0, 1);
 
         m_PreviewVertexColor = EditorGUILayout.Toggle("预览顶点色",
             m_PreviewVertexColor);
 
-        ////m_PaintVertexType =
-        ////    (PaintVertexType)
-        ////        EditorGUI.EnumPopup(new Rect(5, 125, rect.width - 20, 20), "笔刷类型",
-        ////            m_PaintVertexType);
 
-        
 
-        
 
-       
+
+
+
+
 
         GUILayout.EndArea();
 
@@ -815,6 +819,8 @@ public class UnlitWaterGenerator : MDIEditorWindow
 
     private void PaintVertexColor(GameObject target, Vector3 point, int index)
     {
+        if (!target)
+            return;
         MeshFilter mf = target.GetComponent<MeshFilter>();
         if (mf && mf.sharedMesh)
         {
@@ -850,6 +856,91 @@ public class UnlitWaterGenerator : MDIEditorWindow
             //        PaintVertexColorAtTriangle(mf.sharedMesh, index);
             //}
         }
+    }
+
+    private void DrawVertexColor(GameObject target, Vector3 point, int index)
+    {
+        if (!target)
+            return;
+        MeshFilter mf = target.GetComponent<MeshFilter>();
+        if (mf && mf.sharedMesh)
+        {
+            if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
+            {
+                m_IsMouseDragging = true;
+                if (mf.sharedMesh.colors.Length <= 0)
+                {
+
+                    Color[] cl = new Color[mf.sharedMesh.vertexCount];
+                    for (int i = 0; i < mf.sharedMesh.colors.Length; i++)
+                    {
+                        cl[i] = Color.white;
+                    }
+                    mf.sharedMesh.colors = cl;
+                }
+            }
+            if (Event.current.type == EventType.MouseUp)
+            {
+                m_IsMouseDragging = false;
+            }
+            if (Event.current.type == EventType.MouseDrag && m_IsMouseDragging)
+            {
+                if (m_PaintVertexType == PaintVertexType.点)
+                    PaintVertexColorAtPoint(mf, index, point);
+                else
+                    PaintVertexColorAtTriangle(mf, index);
+            }
+        }
+    }
+
+    private void PaintVertexColorAtPoint(MeshFilter meshFilter, int index, Vector3 position)
+    {
+        float dis = Mathf.Infinity;
+        int hitid = 0;
+        position = meshFilter.transform.worldToLocalMatrix.MultiplyPoint(position);
+
+        for (int i = 0; i < 3; i++)
+        {
+            int id = meshFilter.sharedMesh.triangles[index * 3 + i];
+            float distop = Vector3.Distance(position, meshFilter.sharedMesh.vertices[id]);
+            if (distop < dis)
+            {
+                dis = distop;
+                hitid = index * 3 + i;
+            }
+        }
+        Color[] ncl = meshFilter.sharedMesh.colors;
+        ncl[meshFilter.sharedMesh.triangles[hitid]] = SetVertexColor(ncl[meshFilter.sharedMesh.triangles[hitid]]);
+        meshFilter.sharedMesh.colors = ncl;
+    }
+
+    private Color SetVertexColor(Color color)
+    {
+        switch (m_PaintVertexChannel)
+        {
+            case PaintVertexChannel.R:
+                color = new Color(m_PaintVertexAlpha, color.g, color.b, color.a);
+                break;
+            case PaintVertexChannel.G:
+                color = new Color(color.r, m_PaintVertexAlpha, color.b, color.a);
+                break;
+            case PaintVertexChannel.B:
+                color = new Color(color.r, color.g, m_PaintVertexAlpha, color.a);
+                break;
+            case PaintVertexChannel.A:
+                color = new Color(color.r, color.g, color.b, m_PaintVertexAlpha);
+                break;
+        }
+        return color;
+    }
+
+    private void PaintVertexColorAtTriangle(MeshFilter meshFilter, int index)
+    {
+        Color[] ncl = meshFilter.sharedMesh.colors;
+        ncl[meshFilter.sharedMesh.triangles[index * 3]] = SetVertexColor(ncl[meshFilter.sharedMesh.triangles[index * 3]]);
+        ncl[meshFilter.sharedMesh.triangles[index * 3 + 1]] = SetVertexColor(ncl[meshFilter.sharedMesh.triangles[index * 3 + 1]]);
+        ncl[meshFilter.sharedMesh.triangles[index * 3 + 2]] = SetVertexColor(ncl[meshFilter.sharedMesh.triangles[index * 3 + 2]]);
+        meshFilter.sharedMesh.colors = ncl;
     }
 
     private void ShowBrush(Mesh mesh, Matrix4x4 matrix, int index0, int index1, int index2)
