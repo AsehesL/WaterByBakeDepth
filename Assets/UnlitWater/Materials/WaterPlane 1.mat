@@ -19,7 +19,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _Gradient:
-        m_Texture: {fileID: 2800000, guid: 8c0d500d03f980448ae08cf070f92f97, type: 3}
+        m_Texture: {fileID: 2800000, guid: 47c766ee7fd556c41b3f6b4593b47235, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
@@ -35,17 +35,17 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _Gloss: 0.87
+    - _Gloss: 0.81
     - _SineHeight: 0.51
     - _SineLength: 1.12
     - _SineNoise: 0.17
-    - _Specular: 0.81
+    - _Specular: 0.34
     - _VertexHeight: 0.005
     - _VertexLength: 13.75
     - _WaveNoise: 1.42
     - _WaveRange: 0.24
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _LightDir: {r: -0.3213938, g: -0.76604444, b: 0.5566705, a: 0}
-    - _Speed: {r: 0.24, g: 9.88, b: 2.56, a: 1.8}
-    - _Spoondrift: {r: 0.74, g: 0.4, b: 0.17, a: 0.72}
+    - _LightDir: {r: -0.3213938, g: -0.76604444, b: 0.5566705, a: 0.81}
+    - _Speed: {r: 0.24, g: 9.88, b: 2.56, a: 2.17}
+    - _Spoondrift: {r: 1.17, g: 0.24, b: 0.05, a: 1.72}

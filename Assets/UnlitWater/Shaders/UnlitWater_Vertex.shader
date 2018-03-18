@@ -24,54 +24,6 @@ Shader "Unlit/UnlitWater_Vertex"
 	SubShader
 	{
 		Tags{ "RenderType" = "Transparent" "Queue" = "Transparent" "IgnoreProjector" = "true" }
-
-		/*Pass
-		{
-			blend dstcolor zero
-			zwrite off
-			CGPROGRAM
-			#pragma vertex vert
-			#pragma fragment frag
-
-			#include "UnityCG.cginc"
-
-			struct appdata
-			{
-				float4 vertex : POSITION;
-				float4 color : COLOR;
-			};
-
-			struct v2f
-			{
-				float4 color : COLOR;
-				float4 vertex : SV_POSITION;
-			};
-
-			sampler2D _Gradient;
-
-			v2f vert(appdata v)
-			{
-				v2f o;
-				o.vertex = UnityObjectToClipPos(v.vertex);
-				o.color = v.color;
-				return o;
-			}
-
-			fixed4 frag(v2f i) : SV_Target
-			{
-				fixed4 col = fixed4(1, 1, 1, 1);
-	
-				#if UNITY_UV_STARTS_AT_TOP
-				fixed4 mcol = tex2D(_Gradient, float2(i.color.r, 0));
-				#else
-				fixed4 mcol = tex2D(_Gradient, float2(i.color.r, 1));
-				#endif
-				col.rgb = lerp(col.rgb ,mcol.rgb, mcol.a*i.color.a);
-
-				return col;
-			}
-			ENDCG
-		}*/
 		Pass
 		{
 			blend srcalpha oneminussrcalpha
@@ -102,7 +54,7 @@ Shader "Unlit/UnlitWater_Vertex"
 
 			fixed _SineLength;
 			fixed _SineHeight;
-			fixed _SineNoise;
+			//fixed _SineNoise;
 
 			half4 _Speed;
 			fixed _WaveRange;
@@ -147,8 +99,7 @@ Shader "Unlit/UnlitWater_Vertex"
 				i.uv_NormalTex.x += _Time.x*_Speed.x;
 				half sinFactor = sin(_Time.x*_Speed.w + i.uv_NormalTex.x*_SineLength);
 				i.uv_NormalTex.y += _SineHeight*sinFactor;
-				fixed4 normalCol = (tex2D(_NormalTex, i.uv_NormalTex + fixed2(_Time.x*_Speed.x, 0)) + tex2D(_NormalTex, fixed2(_Time.x*_Speed.x + i.uv_NormalTex.y, i.uv_NormalTex.x))) / 2;
-				//fixed4 normalCol = tex2D(_NormalTex, i.uv_NormalTex + normalNoise.xy*_SineNoise);
+				fixed4 normalCol = tex2D(_NormalTex, i.uv_NormalTex);
 				fixed3 normalG = normalCol.rgb * 2 - 1;
 
 #if UNITY_UV_STARTS_AT_TOP

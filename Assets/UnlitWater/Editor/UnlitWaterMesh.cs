@@ -1,12 +1,16 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 
 /// <summary>
 /// UnlitWater自动网格生成器
 /// </summary>
 public static class UnlitWaterMeshGenerator
 {
+    private const float kInVisibleColor = 0.01f;
+    private const float kEdgeRange = 0.4f;
+
     /// <summary>
     /// 生成网格
     /// </summary>
@@ -19,7 +23,7 @@ public static class UnlitWaterMeshGenerator
     /// <param name="offsetZ">z方向偏移</param>
     /// <param name="maxLod">最大lod</param>
     /// <returns></returns>
-    public static Mesh GenerateMesh(Texture2D texture, int xCells, int zCells, float xWidth, float zWidth, float offsetX, float offsetZ, int maxLod)
+    public static Mesh GenerateMesh(Texture2D texture, int xCells, int zCells, float xWidth, float zWidth, float offsetX, float offsetZ, int maxLod, int samples)
     {
         //构建单元格数组
         UnlitWaterMeshCell[,] cells = new UnlitWaterMeshCell[xCells, zCells];
@@ -37,12 +41,12 @@ public static class UnlitWaterMeshGenerator
                     zWidth / zCells);
                 //为单元格分配指定区域的像素并计算极差和平均值
                 cells[i, j].Calculate(texture, i*w, j*h, w, h);
-                if (cells[i, j].average < 0.01f)
+                if (cells[i, j].average < kInVisibleColor)
                 {
                     cells[i, j].lod = -1;//如果单元格像素颜色平均值小于0.01，则判定该单元格基本上位于非水域内，则lod设置为-1，将不参与水网格的构建
                     continue;
                 }
-                if (cells[i, j].range > 0.4f)//如果极差超过0.4，则判定该单元格同时包含水域和陆地，即岸边区域，应该给予最大lod
+                if (cells[i, j].range > kEdgeRange)//如果极差超过0.4，则判定该单元格同时包含水域和陆地，即岸边区域，应该给予最大lod
                     cells[i, j].lod = maxLod;
             }
         }
@@ -95,7 +99,7 @@ public static class UnlitWaterMeshGenerator
             }
         }
 
-        Mesh mesh = cache.Apply(texture);
+        Mesh mesh = cache.Apply(texture, samples);
         return mesh;
     }
 
@@ -139,7 +143,15 @@ public static class UnlitWaterMeshGenerator
         {
             public Vector3 vertex;
             public Vector2 uv;
+            public Color color;
             public int index;
+
+            private float m_BeginX;
+            private float m_BeginY;
+            private int m_Width;
+            private int m_Height;
+            private float m_CellSizeX;
+            private float m_CellSizeY;
 
             public VertexData(Vector3 vertex, float beginx, float beginy, int width, int height, float cellSizeX, float cellSizeY)
             {
@@ -149,16 +161,74 @@ public static class UnlitWaterMeshGenerator
                 uv = new Vector2();
                 uv.x = (vertex.x - beginx) / ((width - 1) * cellSizeX);
                 uv.y = (vertex.z - beginy) / ((height - 1) * cellSizeY);
+
+                m_BeginX = beginx;
+                m_BeginY = beginy;
+                m_Width = width;
+                m_Height = height;
+                m_CellSizeX = cellSizeX;
+                m_CellSizeY = cellSizeY;
             }
 
-            public bool IsVisible(Texture2D tex, float compare)
+            public void RefreshColor(Texture2D tex)
+            {
+                Color col = GetColor(tex, uv);
+                color = new Color(col.r, 1, 1, 1);
+            }
+
+            public bool IsVisible(Texture2D tex, int samples)
+            {
+                bool visible = IsVisibleInternal(tex, uv);
+
+                for (int i = 1; i < samples; i++)
+                {
+                    Vector2 spuv = new Vector2();
+                    spuv.x = uv.x + ((float) i)/(m_Width - 1);
+                    spuv.y = uv.y + ((float) i)/(m_Width - 1);
+                    if (IsVisibleInternal(tex, spuv))
+                        visible = true;
+
+                    spuv.x = uv.x - ((float) i)/(m_Width - 1);
+                    spuv.y = uv.y + ((float) i)/(m_Width - 1);
+                    if (IsVisibleInternal(tex, spuv))
+                        visible = true;
+
+                    spuv.x = uv.x + ((float) i)/(m_Width - 1);
+                    spuv.y = uv.y - ((float) i)/(m_Width - 1);
+                    if (IsVisibleInternal(tex, spuv))
+                        visible = true;
+
+                    spuv.x = uv.x - ((float) i)/(m_Width - 1);
+                    spuv.y = uv.y - ((float) i)/(m_Width - 1);
+                    if (IsVisibleInternal(tex, spuv))
+                        visible = true;
+                }
+
+                return visible;
+            }
+
+            private Color GetColor(Texture2D tex, Vector2 uv)
             {
                 int x = (int)(uv.x * tex.width);
                 int y = (int)(uv.y * tex.height);
+                if (x < 0)
+                    x = 0;
+                if (x >= tex.width)
+                    x = tex.width - 1;
+                if (y < 0)
+                    y = 0;
+                if (y >= tex.height)
+                    y = tex.height - 1;
                 Color col = tex.GetPixel(x, y);
-                if (col.g < compare)
-                    return false;
-                return true;
+                return col;
+            }
+
+            private bool IsVisibleInternal(Texture2D tex, Vector2 uv)
+            {
+                Color col = GetColor(tex, uv);
+                if (col.g >= kInVisibleColor)
+                    return true;
+                return false;
             }
         }
 
@@ -227,30 +297,28 @@ public static class UnlitWaterMeshGenerator
         /// 应用网格（产生没有重合顶点的mesh）
         /// </summary>
         /// <returns></returns>
-        public Mesh Apply(Texture2D texture)
+        public Mesh Apply(Texture2D texture, int samples)
         {
             List<Vector3> vlist = new List<Vector3>();
             List<Vector2> ulist = new List<Vector2>();
+            List<Color> clist = new List<Color>();
             List<int> ilist = new List<int>();
 
             foreach (var dt in m_Vertexs)
             {
-                Vector2 uv = new Vector2();
-                uv.x = (dt.Value.vertex.x - m_BeginX)/((m_Width - 1)*m_CellSizeX);
-                uv.y = (dt.Value.vertex.z - m_BeginY) / ((m_Height - 1) * m_CellSizeY);
 
-                bool isVisible = dt.Value.IsVisible(texture, 0.1f);
+                bool isVisible = dt.Value.IsVisible(texture, samples);
                 if (!isVisible)
                 {
                     continue;
                 }
+                dt.Value.RefreshColor(texture);
                 dt.Value.index = vlist.Count;
 
                 vlist.Add(dt.Value.vertex);
-                ulist.Add(uv);
+                ulist.Add(dt.Value.uv);
+                clist.Add(dt.Value.color);
 
-                //vlist[dt.Value.index] = dt.Value.vertex;
-                //ulist[dt.Value.index] = uv;
             }
 
             for (int i = 0; i < m_IndexList.Count; i+=3)
@@ -263,41 +331,22 @@ public static class UnlitWaterMeshGenerator
                 int k2 = GetVertexKey(vertex2);
                 if (!m_Vertexs.ContainsKey(k0) || !m_Vertexs.ContainsKey(k1) || !m_Vertexs.ContainsKey(k2))
                     continue;
-                //if (!m_Vertexs.ContainsKey(k))
-                //    continue;
-                //var dt = m_Vertexs[k];
-                //if (dt.index < 0)
-                //    continue;
                 var dt0 = m_Vertexs[k0];
                 var dt1 = m_Vertexs[k1];
                 var dt2 = m_Vertexs[k2];
                 if (dt0.index < 0 || dt1.index < 0 || dt2.index < 0)
                     continue;
-
-                var uv0 = ulist[dt0.index];
-                var uv1 = ulist[dt1.index];
-                var uv2 = ulist[dt2.index];
                 
-                //if (!IsVisible(texture, uv0, 0.1f))
-                //    continue;
-                //if (!IsVisible(texture, uv1, 0.1f))
-                //    continue;
-                //if (!IsVisible(texture, uv2, 0.1f))
-                //    continue;
-
-                //ilist[i] = dt.index;
                 ilist.Add(dt0.index);
                 ilist.Add(dt1.index);
                 ilist.Add(dt2.index);
-                //ilist.Add(dt.index);
             }
 
             Mesh mesh = new Mesh();
             mesh.SetVertices(vlist);
             mesh.SetUVs(0, ulist);
+            mesh.SetColors(clist);
             mesh.SetTriangles(ilist, 0);
-            //mesh.SetVertices(m_VertexList);
-            //mesh.SetTriangles(m_IndexList, 0);
             mesh.RecalculateNormals();
 
             return mesh;
