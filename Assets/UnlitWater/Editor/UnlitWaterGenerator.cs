@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using ASL.UnlitWater;
 using UnityEngine;
 using UnityEditor;
 
@@ -18,51 +19,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
         //没有Mesh警告
         NoMesh,
     }
-
-    private enum PaintVertexType
-    {
-        点,//对单个顶点着色
-        三角//对三角面着色
-    }
-
-    private enum PaintVertexChannel
-    {
-        None,
-        R,
-        G,
-        B,
-        A,
-    }
-
-    private Material brushMaterial
-    {
-        get
-        {
-            if (m_BrushMaterial == null)
-            {
-                Shader m_TerrainBrushShader = Shader.Find("Hidden/MeshPainter/Editor/TerrainBrush");
-
-                m_BrushMaterial = new Material(m_TerrainBrushShader);
-                m_BrushMaterial.SetColor("_Color", new Color(0, 0.5f, 1, 0.5f));
-                m_BrushMaterial.SetVector("_VertexMask", new Vector4(1, 0, 0, 0));
-            }
-            return m_BrushMaterial;
-        }
-    }
-
-    private static System.Reflection.MethodInfo intersectRayMesh
-    {
-        get
-        {
-            if (m_IntersectRayMesh == null)
-            {
-                var tp = typeof (HandleUtility);
-                m_IntersectRayMesh = tp.GetMethod("IntersectRayMesh",
-                    System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
-            }
-            return m_IntersectRayMesh;
-        }
-    }
+    
 
     private GameObject m_TargetGameObject;
     private bool m_AutoGenerateMesh;
@@ -79,36 +36,19 @@ public class UnlitWaterGenerator : MDIEditorWindow
     private float m_MaxDepth = 1;
     private float m_DepthPower = 1;
 
-    private float m_RotY = 0;
+    private float m_RotY = 0;  
 
-    private int m_DiscardSamples = 2;
+    private int m_DiscardSamples = 2; 
 
     private float m_MaxHeight = 1;
     private float m_MinHeight = 1;
 
-    private bool m_IsMouseDragging;
-
-    private PaintVertexType m_PaintVertexType;
-    private PaintVertexChannel m_PaintVertexChannel;
-
     private Texture2D m_Texture;
-
-    //private Texture2D[] m_Brushes;
-
-    //private int m_SelectBrushIndex;
-
-    //private float m_BrushSize;
-    //private float m_BrushAngle;
 
     private Transform m_LightTransform;
 
-    private bool m_PreviewVertexColor;
-
-    private float m_PaintVertexAlpha;
-
-    private static System.Reflection.MethodInfo m_IntersectRayMesh;
-
-    private Material m_BrushMaterial;
+    private UnlitWaterPainter m_Painter;
+    
 
     [MenuItem("GameObject/UnlitWater/Create UnlitWater", false, 2500)]
     static void Init()
@@ -120,8 +60,9 @@ public class UnlitWaterGenerator : MDIEditorWindow
     protected override void OnEnable()
     {
         base.OnEnable();
-        //m_Brushes = LoadBrushIcons();
-        SceneView.onSceneGUIDelegate += OnSceneGUI;
+        if(m_Painter == null)
+            m_Painter = new UnlitWaterPainter();
+        SceneView.onSceneGUIDelegate += OnSceneGUI; 
     }
 
     protected override void OnDisable()
@@ -134,117 +75,19 @@ public class UnlitWaterGenerator : MDIEditorWindow
     {
         if ((int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject)
         {
-            Quaternion rot = Quaternion.Euler(0, m_RotY, 0);
-            Vector3 pos1 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +rot* new Vector3(m_Size.x, 0, m_Size.y);
-            Vector3 pos2 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(m_Size.x, 0, -m_Size.y);
-            Vector3 pos3 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(-m_Size.x, 0, -m_Size.y);
-            Vector3 pos4 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(-m_Size.x, 0, m_Size.y);
-
-            Vector3 pos5 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(m_Size.x, -m_MinHeight, m_Size.y);
-            Vector3 pos6 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(m_Size.x, -m_MinHeight, -m_Size.y);
-            Vector3 pos7 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(-m_Size.x, -m_MinHeight, -m_Size.y);
-            Vector3 pos8 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(-m_Size.x, -m_MinHeight, m_Size.y);
-
-            Vector3 pos9 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(m_Size.x, m_MaxHeight, m_Size.y);
-            Vector3 pos10 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(m_Size.x, m_MaxHeight, -m_Size.y);
-            Vector3 pos11 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(-m_Size.x, m_MaxHeight, -m_Size.y);
-            Vector3 pos12 = m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) + rot * new Vector3(-m_Size.x, m_MaxHeight, m_Size.y);
-
-            Handles.color = Color.green;
-
-            Handles.DrawLine(pos1, pos2);
-            Handles.DrawLine(pos2, pos3);
-            Handles.DrawLine(pos3, pos4);
-            Handles.DrawLine(pos4, pos1);
-
-            Handles.DrawLine(pos5, pos6);
-            Handles.DrawLine(pos6, pos7);
-            Handles.DrawLine(pos7, pos8);
-            Handles.DrawLine(pos8, pos5);
-
-            Handles.DrawLine(pos9, pos10);
-            Handles.DrawLine(pos10, pos11);
-            Handles.DrawLine(pos11, pos12);
-            Handles.DrawLine(pos12, pos9);
-
-            Handles.DrawLine(pos9, pos5);
-            Handles.DrawLine(pos10, pos6);
-            Handles.DrawLine(pos11, pos7);
-            Handles.DrawLine(pos12, pos8);
+            UnlitWaterHandles.DrawUnlitWaterArea(
+                m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y),
+                Quaternion.Euler(0, m_RotY, 0), m_Size,
+                new Vector2(m_MinHeight, m_MaxHeight), Color.green);
 
             if (m_AutoGenerateMesh)
             {
-                
-
-                float deltax = m_Size.x*2/m_CellSizeX;
-                float deltaz = m_Size.y*2/m_CellSizeZ;
-
-                int dt = (int)Mathf.Pow(2, m_MaxLod);
-                float loddeltax = deltax / dt;
-                float loddeltaz = deltaz / dt;
-
-                for (int i = 0; i < m_CellSizeX; i++)
-                {
-                    if (i > 0)
-                    {
-                        Handles.color = Color.blue;
-                        Vector3 posb = m_TargetGameObject.transform.position +
-                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
-                                       rot*new Vector3(-m_Size.x + i*deltax, 0, m_Size.y);
-                        Vector3 posf = m_TargetGameObject.transform.position +
-                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
-                                       rot*new Vector3(-m_Size.x + i*deltax, 0, -m_Size.y);
-                        Handles.DrawLine(posb, posf);
-                    }
-                    Handles.color = Color.yellow;
-                    for (int j = 1; j < dt; j++)
-                    {
-                        Vector3 posb = m_TargetGameObject.transform.position +
-                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
-                                       rot * new Vector3(-m_Size.x + i * deltax + j * loddeltax, 0, m_Size.y);
-                        Vector3 posf = m_TargetGameObject.transform.position +
-                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
-                                       rot * new Vector3(-m_Size.x + i * deltax + j * loddeltax, 0, -m_Size.y);
-                        Handles.DrawLine(posb, posf);
-                    }
-                }
-
-                for (int i = 0; i < m_CellSizeZ; i++)
-                {
-                    if (i > 0)
-                    {
-                        Handles.color = Color.blue;
-                        Vector3 posb = m_TargetGameObject.transform.position +
-                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
-                                       rot*new Vector3(-m_Size.x, 0, -m_Size.y + i*deltaz);
-                        Vector3 posf = m_TargetGameObject.transform.position +
-                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
-                                       rot*new Vector3(m_Size.x, 0, -m_Size.y + i*deltaz);
-                        Handles.DrawLine(posb, posf);
-                    }
-                    Handles.color = Color.yellow;
-                    for (int j = 1; j < dt; j++)
-                    {
-                        Vector3 posb = m_TargetGameObject.transform.position +
-                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
-                                       rot * new Vector3(-m_Size.x, 0, -m_Size.y + i * deltaz + j * loddeltaz);
-                        Vector3 posf = m_TargetGameObject.transform.position +
-                                       new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y) +
-                                       rot * new Vector3(m_Size.x, 0, -m_Size.y + i * deltaz + j * loddeltaz);
-                        Handles.DrawLine(posb, posf);
-                    }
-                }
+                UnlitWaterHandles.DrawUnlitWaterCells(
+                    m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y),
+                    Quaternion.Euler(0, m_RotY, 0), m_Size, m_CellSizeX, m_CellSizeZ, m_MaxLod);
             }
 
-            if (m_PaintVertexChannel != PaintVertexChannel.None)
-            {
-                RaycastHit hit;
-                if (RayCastInSceneView(m_TargetGameObject, out hit))
-                {
-                    PaintVertexColor(m_TargetGameObject, hit.point, hit.triangleIndex);
-                    DrawVertexColor(m_TargetGameObject, hit.point, hit.triangleIndex);
-                }
-            }
+            m_Painter.DrawSceneGUI(m_TargetGameObject);
         }
     }
 
@@ -253,11 +96,11 @@ public class UnlitWaterGenerator : MDIEditorWindow
     {
         if (GUI.Button(new Rect(toolbar.x + 10, toolbar.y, 90, 15), "从文件加载深度图", GUIStyleCache.GetStyle("MiniToolBarButton")))
         {
-            LoadTexture(ref m_Texture);
+            UnlitWaterUtils.LoadTexture(ref m_Texture);
         }
         if (GUI.Button(new Rect(toolbar.x + 100, toolbar.y, 90, 15), "保存深度图", GUIStyleCache.GetStyle("MiniToolBarButton")))
         {
-            SaveTexture(m_Texture);
+            UnlitWaterUtils.SaveTexture(m_Texture);
         }
         if (m_Texture)
         {
@@ -270,7 +113,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
     private void DrawMeshSetting(Rect rect)
     {
         bool guienable = GUI.enabled;
-        GUI.enabled = guienable && m_PaintVertexChannel == PaintVertexChannel.None;
+        GUI.enabled = guienable && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None;
         GUI.BeginGroup(new Rect(rect.x + 5, rect.y + 5, rect.width - 10, rect.height - 10));
         EditorGUI.BeginChangeCheck();
         m_TargetGameObject =
@@ -280,7 +123,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
         if (EditorGUI.EndChangeCheck())
         {
             CheckTargetCorrectness();
-            CalculateAreaInfo(m_TargetGameObject, m_AutoGenerateMesh, ref m_LocalCenter, ref m_Size);
+            UnlitWaterUtils.CalculateAreaInfo(m_TargetGameObject, m_AutoGenerateMesh, ref m_LocalCenter, ref m_Size);
         }
 
         GUI.enabled = guienable && m_AutoGenerateMesh;
@@ -305,10 +148,10 @@ public class UnlitWaterGenerator : MDIEditorWindow
     private void DrawBakeSetting(Rect rect)
     {
         bool guienable = GUI.enabled;
-        GUI.enabled = guienable && m_PaintVertexChannel == PaintVertexChannel.None;
+        GUI.enabled = guienable && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None;
         GUI.BeginGroup(new Rect(rect.x + 5, rect.y + 5, rect.width - 10, rect.height - 10));
 
-        GUI.enabled = (int) m_TargetErrorDef <= (int) TargetErrorDef.WillReplaceMesh && m_TargetGameObject && m_PaintVertexChannel == PaintVertexChannel.None && guienable;
+        GUI.enabled = (int) m_TargetErrorDef <= (int) TargetErrorDef.WillReplaceMesh && m_TargetGameObject && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None && guienable;
         GUI.Label(new Rect(0, 0, position.width - 10, 17), "区域设置");
         m_MaxHeight = Mathf.Max(0,
             EditorGUI.FloatField(new Rect(0, 20, rect.width - 10, 17),
@@ -319,11 +162,11 @@ public class UnlitWaterGenerator : MDIEditorWindow
                 new GUIContent("下方高度", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "调整下方高度直到刚好超过水底最深处"),
                 m_MinHeight));
 
-        GUI.enabled = (int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject && m_PaintVertexChannel == PaintVertexChannel.None && guienable && !m_AutoGenerateMesh;
+        GUI.enabled = (int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None && guienable && !m_AutoGenerateMesh;
         m_LocalCenter = EditorGUI.Vector2Field(new Rect(0, 60, rect.width - 10, 40),
             new GUIContent("位置偏移", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "调整渲染区域的坐标偏移"),
             m_LocalCenter);
-        GUI.enabled = (int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject && m_PaintVertexChannel == PaintVertexChannel.None && guienable;
+        GUI.enabled = (int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None && guienable;
 
         m_Size = EditorGUI.Vector2Field(new Rect(0, 100, rect.width - 10, 40),
           new GUIContent("区域大小", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "调整渲染区域的区域大小"),
@@ -344,15 +187,16 @@ public class UnlitWaterGenerator : MDIEditorWindow
 
         if (GUI.Button(new Rect(0, 220, (rect.width - 10) / 2, 16), "渲染", GUIStyleCache.GetStyle("ButtonLeft")))
         {
-            Render(m_TargetGameObject, m_LocalCenter, m_Size, m_RotY, m_MaxHeight, m_MinHeight, m_MaxDepth, m_DepthPower, ref m_Texture);
+            UnlitWaterUtils.RenderDepthTexture(m_TargetGameObject, m_LocalCenter, m_Size,
+                Quaternion.Euler(90, m_RotY, 0), m_MaxHeight, m_MinHeight, m_MaxDepth, m_DepthPower, ref m_Texture);
         }
-        GUI.enabled = m_Texture != null && m_PaintVertexChannel == PaintVertexChannel.None && guienable;
+        GUI.enabled = m_Texture != null && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None && guienable;
         if (m_AutoGenerateMesh)
         {
             if (GUI.Button(new Rect((rect.width - 10) / 2, 220, (rect.width - 10) / 2, 16), "生成Mesh",
                 GUIStyleCache.GetStyle("ButtonRight")))
             {
-                GenerateMesh(m_TargetGameObject, m_Texture, m_Size, m_CellSizeX, m_CellSizeZ, m_MaxLod, m_DiscardSamples);
+                UnlitWaterUtils.GenerateMesh(m_TargetGameObject, m_Texture, m_Size, m_CellSizeX, m_CellSizeZ, m_MaxLod, m_DiscardSamples);
             }
         }
         else
@@ -360,7 +204,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
             if (GUI.Button(new Rect((rect.width - 10)/2, 220, (rect.width - 10)/2, 16), "应用到顶点色",
                 GUIStyleCache.GetStyle("ButtonRight")))
             {
-                ApplyToVertex(m_TargetGameObject, m_Texture, m_LocalCenter, m_Size, m_MinHeight, m_MaxHeight);
+                UnlitWaterUtils.ApplyToVertexColor(m_TargetGameObject, m_Texture, m_LocalCenter, m_Size, m_MinHeight, m_MaxHeight);
             }
         }
 
@@ -372,7 +216,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
     private void DrawSetting(Rect rect)
     {
         bool guienable = GUI.enabled;
-        GUI.enabled = (int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject && guienable && m_PaintVertexChannel == PaintVertexChannel.None;
+        GUI.enabled = (int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject && guienable && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None;
         GUI.BeginGroup(new Rect(rect.x + 5, rect.y + 5, rect.width - 10, rect.height - 10));
 
         GUI.Label(new Rect(0,0,rect.width-10,17), "灯光");
@@ -383,7 +227,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
         if (GUI.Button(new Rect((rect.width-10)*0.8f, 20, (rect.width - 10)*0.2f, 17), "烘焙光照方向"))
         {
             if (m_LightTransform)
-                BakeLightDir(m_TargetGameObject, m_LightTransform.forward);
+                UnlitWaterUtils.BakeLightDir(m_TargetGameObject, m_LightTransform.forward);
         }
 
         GUI.enabled = (int) m_TargetErrorDef <= (int) TargetErrorDef.WillReplaceMesh && m_TargetGameObject && guienable;
@@ -399,57 +243,43 @@ public class UnlitWaterGenerator : MDIEditorWindow
 
         GUILayout.BeginHorizontal();
         EditorGUI.BeginChangeCheck();
-        m_PaintVertexChannel = GUILayout.Toggle(m_PaintVertexChannel == PaintVertexChannel.None, "不绘制",
+        m_Painter.paintVertexChannel = GUILayout.Toggle(m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None, "不绘制",
              GUI.skin.FindStyle("ButtonLeft"))
-            ? PaintVertexChannel.None
-            : m_PaintVertexChannel;
+            ? UnlitWaterPainter.Channel.None
+            : m_Painter.paintVertexChannel;
 
-        m_PaintVertexChannel = GUILayout.Toggle(m_PaintVertexChannel == PaintVertexChannel.R,"R:深度",
+        m_Painter.paintVertexChannel = GUILayout.Toggle(m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.R,"R:深度",
              GUI.skin.FindStyle("ButtonMid"))
-            ? PaintVertexChannel.R
-            : m_PaintVertexChannel;
+            ? UnlitWaterPainter.Channel.R
+            : m_Painter.paintVertexChannel;
 
-        m_PaintVertexChannel = GUILayout.Toggle(m_PaintVertexChannel == PaintVertexChannel.G,"G:浪花透明", GUI.skin.FindStyle("ButtonMid"))
-            ? PaintVertexChannel.G
-            : m_PaintVertexChannel;
+        m_Painter.paintVertexChannel = GUILayout.Toggle(m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.G,"G:浪花透明", GUI.skin.FindStyle("ButtonMid"))
+            ? UnlitWaterPainter.Channel.G
+            : m_Painter.paintVertexChannel;
 
-        m_PaintVertexChannel = GUILayout.Toggle(m_PaintVertexChannel == PaintVertexChannel.B, "B:海浪波纹透明", GUI.skin.FindStyle("ButtonMid"))
-            ? PaintVertexChannel.B
-            : m_PaintVertexChannel;
+        m_Painter.paintVertexChannel = GUILayout.Toggle(m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.B, "B:海浪波纹透明", GUI.skin.FindStyle("ButtonMid"))
+            ? UnlitWaterPainter.Channel.B
+            : m_Painter.paintVertexChannel;
 
-        m_PaintVertexChannel = GUILayout.Toggle(m_PaintVertexChannel == PaintVertexChannel.A, "A:整体透明", GUI.skin.FindStyle("ButtonRight"))
-            ? PaintVertexChannel.A
-            : m_PaintVertexChannel;
+        m_Painter.paintVertexChannel = GUILayout.Toggle(m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.A, "A:整体透明", GUI.skin.FindStyle("ButtonRight"))
+            ? UnlitWaterPainter.Channel.A
+            : m_Painter.paintVertexChannel;
 
         if (EditorGUI.EndChangeCheck())
         {
-            if (m_PaintVertexChannel != PaintVertexChannel.None)
-            {
-                Vector4 vertexMask = new Vector4(m_PaintVertexChannel == PaintVertexChannel.R ? 1 : 0,
-                    m_PaintVertexChannel == PaintVertexChannel.G ? 1 : 0,
-                    m_PaintVertexChannel == PaintVertexChannel.B ? 1 : 0,
-                    m_PaintVertexChannel == PaintVertexChannel.A ? 1 : 0);
-                brushMaterial.SetVector("_VertexMask", vertexMask);
-            }
+            m_Painter.ResetChannel();
         }
 
         GUILayout.EndHorizontal();
 
-        m_PaintVertexType =
-    (PaintVertexType)
-        EditorGUILayout.EnumPopup("笔刷类型", m_PaintVertexType);
+        m_Painter.paintVertexType =
+    (UnlitWaterPainter.BrushType)
+        EditorGUILayout.EnumPopup("笔刷类型", m_Painter.paintVertexType);
 
-        m_PaintVertexAlpha = EditorGUILayout.Slider("绘制强度", m_PaintVertexAlpha, 0, 1);
+        m_Painter.paintVertexAlpha = EditorGUILayout.Slider("绘制强度", m_Painter.paintVertexAlpha, 0, 1);
 
-        m_PreviewVertexColor = EditorGUILayout.Toggle("预览顶点色",
-            m_PreviewVertexColor);
-
-
-
-
-
-
-
+        m_Painter.previewVertexColor = EditorGUILayout.Toggle("预览顶点色",
+            m_Painter.previewVertexColor);
 
 
         GUILayout.EndArea();
@@ -466,7 +296,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
                 EditorGUI.HelpBox(rect, "提示，Mesh来自模型文件，需要生成拷贝Mesh！", MessageType.Info);
                 if (GUI.Button(new Rect(rect.x + 30, rect.y + 30, rect.width - 60, 17), "生成拷贝"))
                 {
-                    if (CreateCopyMesh(m_TargetGameObject))
+                    if (UnlitWaterUtils.CreateCopyMesh(m_TargetGameObject))
                         CheckTargetCorrectness();
                 }
                 break;
@@ -512,7 +342,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
             return;
         }
         MeshFilter mf = m_TargetGameObject.GetComponent<MeshFilter>();
-        if (mf && mf.sharedMesh && IsMeshFromModelFile(mf.sharedMesh))
+        if (mf && mf.sharedMesh && UnlitWaterUtils.IsMeshFromModelFile(mf.sharedMesh))
         {
             m_TargetErrorDef = TargetErrorDef.MeshFromModel;
             return;
@@ -535,461 +365,5 @@ public class UnlitWaterGenerator : MDIEditorWindow
         }
         m_TargetErrorDef = TargetErrorDef.None;
     }
-
-    /// <summary>
-    /// 创建拷贝Mesh
-    /// </summary>
-    /// <returns></returns>
-    private static bool CreateCopyMesh(GameObject target)
-    {
-        if (!target)
-            return false;
-        MeshFilter mf = target.GetComponent<MeshFilter>();
-        if (!mf)
-            return false;
-        if (!mf.sharedMesh)
-            return false;
-        string meshPath = AssetDatabase.GetAssetPath(mf.sharedMesh);
-        if (meshPath.ToLower().EndsWith(".asset"))
-            return false;
-
-        string savePath = EditorUtility.SaveFilePanel("保存Mesh路径", "Assets/", "New Water Mesh", "asset");
-        if (string.IsNullOrEmpty(savePath))
-            return false;
-        savePath = FileUtil.GetProjectRelativePath(savePath);
-        if (string.IsNullOrEmpty(savePath))
-            return false;
-
-        Mesh mesh = new Mesh();
-        mesh.vertices = mf.sharedMesh.vertices;
-        mesh.colors = mf.sharedMesh.colors;
-        mesh.normals = mf.sharedMesh.normals;
-        mesh.tangents = mf.sharedMesh.tangents;
-        mesh.triangles = mf.sharedMesh.triangles;
-        mesh.uv = mf.sharedMesh.uv;
-        mesh.uv2 = mf.sharedMesh.uv2;
-        mesh.uv3 = mf.sharedMesh.uv3;
-        mesh.uv4 = mf.sharedMesh.uv4;
-
-        //savePath = AssetDatabase.GenerateUniqueAssetPath(savePath);
-        AssetDatabase.CreateAsset(mesh, savePath);
-
-        mf.sharedMesh = mesh;
-        MeshCollider c = target.GetComponent<MeshCollider>();
-        if (c)
-            c.sharedMesh = mesh;
-        return true;
-    }
-
-    private static void Render(GameObject target, Vector2 offset, Vector2 size, float rotY, float maxHeight, float minHeight, float maxDepth, float depthPower, ref Texture2D tex)
-    {
-        if (target == null)
-        {
-            EditorUtility.DisplayDialog("错误", "请先设置目标网格", "确定");
-            return;
-        }
-        Quaternion transRot = Quaternion.Euler(90, rotY, 0);
-
-        Camera newCam = new GameObject("[TestCamera]").AddComponent<Camera>();
-        newCam.clearFlags = CameraClearFlags.SolidColor;
-        newCam.backgroundColor = Color.black;
-        newCam.orthographic = true;
-        newCam.aspect = size.x / size.y;
-        newCam.orthographicSize = size.y;
-        newCam.nearClipPlane = -maxHeight;
-        newCam.farClipPlane = minHeight;
-        newCam.transform.position = target.transform.position + new Vector3(offset.x, 0, offset.y);
-        newCam.transform.rotation = transRot;
-        newCam.enabled = false;
-
-        RenderTexture rt = new RenderTexture(4096, 4096, 24);
-        rt.hideFlags = HideFlags.HideAndDontSave;
-
-        bool isMeshActive = target.activeSelf;
-        target.SetActive(false);
-
-        newCam.targetTexture = rt;
-        Shader.SetGlobalFloat("depth", maxDepth);
-        Shader.SetGlobalFloat("power", depthPower);
-        Shader.SetGlobalFloat("height", target.transform.position.y);
-        Shader.SetGlobalFloat("minheight", minHeight);
-        newCam.RenderWithShader(Shader.Find("Hidden/DepthMapRenderer"), "RenderType");
-
-        tex = new Texture2D(rt.width, rt.height);
-        tex.hideFlags = HideFlags.HideAndDontSave;
-
-        RenderTexture tp = RenderTexture.active;
-        RenderTexture.active = rt;
-        tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
-        tex.Apply();
-        RenderTexture.active = tp;
-
-        DestroyImmediate(rt);
-        DestroyImmediate(newCam.gameObject);
-
-        target.SetActive(isMeshActive);
-        
-    }
-
-    private static void LoadTexture(ref Texture2D tex)
-    {
-        string path = EditorUtility.OpenFilePanel("读取深度图", "", "png");
-        if (string.IsNullOrEmpty(path))
-            return;
-        byte[] buffer = System.IO.File.ReadAllBytes(path);
-        tex = new Texture2D(1, 1);
-        tex.hideFlags = HideFlags.HideAndDontSave;
-        tex.LoadImage(buffer);
-        tex.Apply();
-    }
-
-    private static void SaveTexture(Texture2D tex)
-    {
-        if (tex == null)
-            return;
-        string path = EditorUtility.SaveFilePanel("保存", Application.dataPath, "", "png");
-        if (!string.IsNullOrEmpty(path))
-        {
-            byte[] buffer = tex.EncodeToPNG();
-            System.IO.File.WriteAllBytes(path, buffer);
-            AssetDatabase.Refresh();
-        }
-    }
-
-    private static void BakeLightDir(GameObject target, Vector3 dir)
-    {
-        if (!target)
-            return;
-        MeshRenderer mr = target.GetComponent<MeshRenderer>();
-        if (!mr)
-            return;
-        if (!mr.sharedMaterial)
-            return;
-        mr.sharedMaterial.SetVector("_LightDir", dir);
-    }
-
-    private static void GenerateMesh(GameObject target, Texture2D tex, Vector2 size, int xCells, int zCells, int maxLod, int discardSamples)
-    {
-        string savePath = EditorUtility.SaveFilePanel("保存Mesh路径", "Assets/", "New Water Mesh", "asset");
-        if (string.IsNullOrEmpty(savePath))
-            return;
-        savePath = FileUtil.GetProjectRelativePath(savePath);
-        if (string.IsNullOrEmpty(savePath))
-            return;
-        if (tex == null)
-            return;
-        if (target == null)
-            return;
-        Mesh mesh = UnlitWaterMeshGenerator.GenerateMesh(tex, xCells, zCells, size.x*2, size.y*2,
-            -size.x, -size.y, maxLod, discardSamples);
-        MeshFilter mf = target.GetComponent<MeshFilter>();
-        if (!mf)
-            mf = target.AddComponent<MeshFilter>();
-        mf.sharedMesh = mesh;
-
-        //savePath = AssetDatabase.GenerateUniqueAssetPath(savePath);
-        AssetDatabase.CreateAsset(mesh, savePath);
-
-        MeshCollider mc = target.GetComponent<MeshCollider>();
-        if(mc)
-            mc.sharedMesh = mesh;
-    }
-
-    private static void ApplyToVertex(GameObject target, Texture2D tex, Vector2 center, Vector2 size, float minHeight, float maxHeight)
-    {
-        if (target == null)
-            return;
-        if (!tex)
-            return;
-        MeshFilter meshFilter = target.GetComponent<MeshFilter>();
-        if (meshFilter == null)
-            return;
-        if (meshFilter.sharedMesh == null)
-            return;
-        Color[] colors = new Color[meshFilter.sharedMesh.vertexCount];
-        Matrix4x4 pj = GetUVProjMatrix(meshFilter.transform, center, size, -maxHeight, minHeight);
-        for (int i = 0; i < meshFilter.sharedMesh.vertexCount; i++)
-        {
-            Vector3 uv = pj.MultiplyPoint(meshFilter.sharedMesh.vertices[i]);
-            Vector2 texUV = new Vector2(uv.x * 0.5f + 0.5f, uv.y * 0.5f + 0.5f);
-            int x = (int)(texUV.x * tex.width);
-            int y = (int)(texUV.y * tex.height);
-            if (x < 0)
-                x = 0;
-            if (x >= tex.width)
-                x = tex.width - 1;
-            if (y < 0)
-                y = 0;
-            if (y >= tex.height)
-                y = tex.height - 1;
-            Color color = tex.GetPixel(x, y);
-            colors[i] = new Color(color.r, 1, 1, 1);
-        }
-
-        meshFilter.sharedMesh.colors = colors;
-    }
-
-    /// <summary>
-    /// 计算区域信息
-    /// </summary>
-    /// <param name="target"></param>
-    /// <param name="localCenter"></param>
-    /// <param name="size"></param>
-    private static void CalculateAreaInfo(GameObject target, bool maxSizeOnly, ref Vector2 localCenter, ref Vector2 size)
-    {
-        if (!target)
-            return;
-        var meshFilter = target.GetComponent<MeshFilter>();
-        if (!meshFilter || !meshFilter.sharedMesh)
-            return;
-        var vertexes = meshFilter.sharedMesh.vertices;
-        Vector2 min = new Vector3(Mathf.Infinity, Mathf.Infinity, Mathf.Infinity);
-        Vector2 max = new Vector3(-Mathf.Infinity, -Mathf.Infinity, -Mathf.Infinity);
-        for (int i = 0; i < vertexes.Length; i++)
-        {
-            Vector3 pos = meshFilter.transform.localToWorldMatrix.MultiplyPoint(vertexes[i]);
-            if (min.x > pos.x)
-                min.x = pos.x;
-            if (min.y > pos.z)
-                min.y = pos.z;
-            if (max.x < pos.x)
-                max.x = pos.x;
-            if (max.y < pos.z)
-                max.y = pos.z;
-        }
-        if (maxSizeOnly)
-        {
-            localCenter = Vector2.zero;
-            size.x = Mathf.Max(Mathf.Abs(min.x-meshFilter.transform.position.x), Mathf.Abs(max.x-meshFilter.transform.position.x));
-            size.y = Mathf.Max(Mathf.Abs(min.y-meshFilter.transform.position.z), Mathf.Abs(max.y-meshFilter.transform.position.z));
-        }
-        else
-        {
-            localCenter = min + (max - min)/2;
-            size = (max - min)/2;
-            localCenter.x = localCenter.x - meshFilter.transform.position.x;
-            localCenter.y = localCenter.y - meshFilter.transform.position.z;
-        }
-    }
-
-    private static Matrix4x4 GetUVProjMatrix(Transform transform, Vector2 center, Vector2 size, float near, float far)
-    {
-        Matrix4x4 toWorld = transform.localToWorldMatrix;
-
-        Matrix4x4 toCam = Matrix4x4.TRS(transform.position + new Vector3(center.x, 0, center.y), Quaternion.Euler(90, 0, 0),
-            Vector3.one);
-
-        Matrix4x4 toProj = Matrix4x4.Ortho(-size.x, size.x, -size.y, size.y, near, far);
-
-        return toProj * toCam.inverse * toWorld;
-    }
-
-    /// <summary>
-    /// Mesh是否来自模型文件
-    /// </summary>
-    /// <param name="mesh"></param>
-    /// <returns></returns>
-    private static bool IsMeshFromModelFile(Mesh mesh)
-    {
-        string meshPath = AssetDatabase.GetAssetPath(mesh);
-        if (!meshPath.ToLower().EndsWith(".asset"))
-            return true;
-        return false;
-    }
-
-    private static bool RayCastInSceneView(GameObject target, out RaycastHit hit)
-    {
-        hit = default(RaycastHit);
-        if (!target)
-            return false;
-        MeshFilter meshfilter = target.GetComponent<MeshFilter>();
-        if (!meshfilter || !meshfilter.sharedMesh)
-            return false;
-        if (UnityEditor.Tools.viewTool != ViewTool.Pan)
-            return false;
-
-        HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
-        Ray ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
-        SceneView.RepaintAll();
-
-        if (RaycastMesh(ray, meshfilter, out hit))
-            return true;
-        return false;
-    }
-
-    private void PaintVertexColor(GameObject target, Vector3 point, int index)
-    {
-        if (!target)
-            return;
-        MeshFilter mf = target.GetComponent<MeshFilter>();
-        if (mf && mf.sharedMesh)
-        {
-            if (m_PaintVertexType == PaintVertexType.点)
-                ShowBrush(mf.sharedMesh, mf.transform.localToWorldMatrix, point, mf.sharedMesh.triangles[index * 3],
-                    mf.sharedMesh.triangles[index * 3 + 1], mf.sharedMesh.triangles[index * 3 + 2]);
-            else
-                ShowBrush(mf.sharedMesh, mf.transform.localToWorldMatrix, mf.sharedMesh.triangles[index * 3],
-                    mf.sharedMesh.triangles[index * 3 + 1], mf.sharedMesh.triangles[index * 3 + 2]);
-            //if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
-            //{
-            //    m_IsMouseDragging = true;
-            //    if (mf.sharedMesh.colors.Length <= 0)
-            //    {
-
-            //        Color[] cl = new Color[mf.sharedMesh.vertexCount];
-            //        for (int i = 0; i < mf.sharedMesh.colors.Length; i++)
-            //        {
-            //            cl[i] = Color.white;
-            //        }
-            //        mf.sharedMesh.colors = cl;
-            //    }
-            //}
-            //if (Event.current.type == EventType.MouseUp)
-            //{
-            //    m_IsMouseDragging = false;
-            //}
-            //if (Event.current.type == EventType.MouseDrag && m_IsMouseDragging)
-            //{
-            //    if (m_PaintVertexType == PaintVertexType.点)
-            //        PaintVertexColorAtPoint(mf.sharedMesh, index, position);
-            //    else
-            //        PaintVertexColorAtTriangle(mf.sharedMesh, index);
-            //}
-        }
-    }
-
-    private void DrawVertexColor(GameObject target, Vector3 point, int index)
-    {
-        if (!target)
-            return;
-        MeshFilter mf = target.GetComponent<MeshFilter>();
-        if (mf && mf.sharedMesh)
-        {
-            if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
-            {
-                m_IsMouseDragging = true;
-                if (mf.sharedMesh.colors.Length <= 0)
-                {
-
-                    Color[] cl = new Color[mf.sharedMesh.vertexCount];
-                    for (int i = 0; i < mf.sharedMesh.colors.Length; i++)
-                    {
-                        cl[i] = Color.white;
-                    }
-                    mf.sharedMesh.colors = cl;
-                }
-            }
-            if (Event.current.type == EventType.MouseUp)
-            {
-                m_IsMouseDragging = false;
-            }
-            if (Event.current.type == EventType.MouseDrag && m_IsMouseDragging)
-            {
-                if (m_PaintVertexType == PaintVertexType.点)
-                    PaintVertexColorAtPoint(mf, index, point);
-                else
-                    PaintVertexColorAtTriangle(mf, index);
-            }
-        }
-    }
-
-    private void PaintVertexColorAtPoint(MeshFilter meshFilter, int index, Vector3 position)
-    {
-        float dis = Mathf.Infinity;
-        int hitid = 0;
-        position = meshFilter.transform.worldToLocalMatrix.MultiplyPoint(position);
-
-        for (int i = 0; i < 3; i++)
-        {
-            int id = meshFilter.sharedMesh.triangles[index * 3 + i];
-            float distop = Vector3.Distance(position, meshFilter.sharedMesh.vertices[id]);
-            if (distop < dis)
-            {
-                dis = distop;
-                hitid = index * 3 + i;
-            }
-        }
-        Color[] ncl = meshFilter.sharedMesh.colors;
-        ncl[meshFilter.sharedMesh.triangles[hitid]] = SetVertexColor(ncl[meshFilter.sharedMesh.triangles[hitid]]);
-        meshFilter.sharedMesh.colors = ncl;
-    }
-
-    private Color SetVertexColor(Color color)
-    {
-        switch (m_PaintVertexChannel)
-        {
-            case PaintVertexChannel.R:
-                color = new Color(m_PaintVertexAlpha, color.g, color.b, color.a);
-                break;
-            case PaintVertexChannel.G:
-                color = new Color(color.r, m_PaintVertexAlpha, color.b, color.a);
-                break;
-            case PaintVertexChannel.B:
-                color = new Color(color.r, color.g, m_PaintVertexAlpha, color.a);
-                break;
-            case PaintVertexChannel.A:
-                color = new Color(color.r, color.g, color.b, m_PaintVertexAlpha);
-                break;
-        }
-        return color;
-    }
-
-    private void PaintVertexColorAtTriangle(MeshFilter meshFilter, int index)
-    {
-        Color[] ncl = meshFilter.sharedMesh.colors;
-        ncl[meshFilter.sharedMesh.triangles[index * 3]] = SetVertexColor(ncl[meshFilter.sharedMesh.triangles[index * 3]]);
-        ncl[meshFilter.sharedMesh.triangles[index * 3 + 1]] = SetVertexColor(ncl[meshFilter.sharedMesh.triangles[index * 3 + 1]]);
-        ncl[meshFilter.sharedMesh.triangles[index * 3 + 2]] = SetVertexColor(ncl[meshFilter.sharedMesh.triangles[index * 3 + 2]]);
-        meshFilter.sharedMesh.colors = ncl;
-    }
-
-    private void ShowBrush(Mesh mesh, Matrix4x4 matrix, int index0, int index1, int index2)
-    {
-        brushMaterial.SetVector("_VIndex", new Vector4(index0, index1, index2, 0));
-        brushMaterial.SetPass(0);
-        Graphics.DrawMeshNow(mesh, matrix);
-    }
-
-    private void ShowBrush(Mesh mesh, Matrix4x4 matrix, Vector3 position, int index0, int index1, int index2)
-    {
-        float dis = Mathf.Infinity;
-        int index = index0;
-        position = m_TargetGameObject.transform.worldToLocalMatrix.MultiplyPoint(position);
-        Vector3 p = mesh.vertices[index0];
-        float tdis = Vector3.Distance(position, p);
-        if (tdis < dis)
-        {
-            dis = tdis;
-            index = index0;
-        }
-        p = mesh.vertices[index1];
-        tdis = Vector3.Distance(position, p);
-        if (tdis < dis)
-        {
-            dis = tdis;
-            index = index1;
-        }
-        p = mesh.vertices[index2];
-        tdis = Vector3.Distance(position, p);
-        if (tdis < dis)
-        {
-            index = index2;
-        }
-        brushMaterial.SetVector("_VIndex", new Vector4(index, 0, 0, 0));
-        brushMaterial.SetPass(1);
-        Graphics.DrawMeshNow(mesh, matrix);
-    }
-
-    private static bool RaycastMesh(Ray ray, MeshFilter meshFilter, out RaycastHit hit)
-    {
-        return RaycastMesh(ray, meshFilter.sharedMesh, meshFilter.transform.localToWorldMatrix, out hit);
-    }
     
-    private static bool RaycastMesh(Ray ray, Mesh mesh, Matrix4x4 matrix, out RaycastHit hit)
-    {
-        var parameters = new object[] { ray, mesh, matrix, null };
-        bool result = (bool)intersectRayMesh.Invoke(null, parameters);
-        hit = (RaycastHit)parameters[3];
-        return result;
-    }
 }

@@ -5,12 +5,14 @@
 		_MainTex ("Texture", 2D) = "white" {}
 		_NormalTex("NormalTex", 2D) = "black" {}
 		_Gradient("Gradient", 2D) = "white" {}
+		_Sky("Sky", cube) = "" {}
+
+		_Fresnel("Fresnel", float) = 0
 
 		_Speed("Speed(x:wavespeed)", vector) = (0,0,0,0)
 
-		_Specular("Specular", float) = 0
-		_Gloss("Gloss", float) = 0
-		_LightDir("LightDir", vector) = (0, 0, 0, 0)
+		//_Specular("Specular", float) = 0
+		//_Gloss("Gloss", float) = 0
 	}
 	SubShader
 	{
@@ -50,10 +52,14 @@
 			sampler2D _NormalTex;
 			float4 _NormalTex_ST;
 
-			half _Specular;
-			fixed _Gloss;
+			half _Fresnel;
 
-			half4 _LightDir;
+			samplerCUBE _Sky;
+
+			//half _Specular;
+			//fixed _Gloss;
+
+			//half4 _LightDir;
 			
 			v2f vert (appdata_full v)
 			{
@@ -93,10 +99,17 @@
 				half3 worldPos = half3(i.TW0.w, i.TW1.w, i.TW2.w);
 
 				half3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
-				half3 h = normalize(viewDir - normalize(_LightDir.xyz));
-				fixed ndh = max(0, dot(worldNormal, h));
+				half3 refl = reflect(-viewDir, worldNormal);
 
-				col += _Gloss*pow(ndh, _Specular*128.0)*fixed4(1, 1, 1, 1);
+				//col = texCUBE(_Sky, refl);
+
+				half vdn = saturate(pow(dot(viewDir, worldNormal), _Fresnel));
+
+				col.rgb = lerp(texCUBE(_Sky, refl), col.rgb, vdn);
+				//half3 h = normalize(viewDir - normalize(_LightDir.xyz));
+				//fixed ndh = max(0, dot(worldNormal, h));
+
+				//col += _Gloss*pow(ndh, _Specular*128.0)*fixed4(0.4, 0.4, 0.4, 1);
 				// sample the texture
 				//fixed4 col = tex2D(_MainTex, i.uv);
 				// apply fog

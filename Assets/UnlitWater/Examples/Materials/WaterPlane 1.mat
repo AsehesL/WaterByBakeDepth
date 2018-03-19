@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_Name: WaterPlane 1
+  m_Shader: {fileID: 4800000, guid: 6fd47c2e6cf6d5b41bd34dbfbc5848ba, type: 3}
+  m_ShaderKeywords: 
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _CubeMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Gradient:
+        m_Texture: {fileID: 2800000, guid: 47c766ee7fd556c41b3f6b4593b47235, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalTex:
+        m_Texture: {fileID: 2800000, guid: 435a30aaeed0c1a4992a56d395b5e2e3, type: 3}
+        m_Scale: {x: 15, y: 15}
+        m_Offset: {x: 0, y: 0}
+    - _Sky:
+        m_Texture: {fileID: 8900000, guid: 768f33b5d33d8d04080044206825b414, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _WaveTex:
+        m_Texture: {fileID: 2800000, guid: a54face16062f014a89cf4ede799ec53, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _Fresnel: 0.68
+    - _Gloss: 1.61
+    - _NormalScale: 0.06
+    - _SineHeight: 0.51
+    - _SineLength: 1.12
+    - _SineNoise: 0.17
+    - _Specular: 2.49
+    - _VertexHeight: 0.005
+    - _VertexLength: 13.75
+    - _WaveNoise: 1.42
+    - _WaveRange: 0.24
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _LightDir: {r: -0.3213938, g: -0.76604444, b: 0.5566705, a: 0.81}
+    - _Speed: {r: 0.24, g: 9.88, b: 2.56, a: 2.17}
+    - _Spoondrift: {r: 1.17, g: 0.24, b: 0.05, a: 1.72}

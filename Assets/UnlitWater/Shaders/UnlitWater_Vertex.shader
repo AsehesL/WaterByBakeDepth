@@ -100,7 +100,7 @@ Shader "Unlit/UnlitWater_Vertex"
 				half sinFactor = sin(_Time.x*_Speed.w + i.uv_NormalTex.x*_SineLength);
 				i.uv_NormalTex.y += _SineHeight*sinFactor;
 				fixed4 normalCol = tex2D(_NormalTex, i.uv_NormalTex);
-				fixed3 normalG = normalCol.rgb * 2 - 1;
+				fixed3 normalG = UnpackNormal(normalCol);//normalCol.rgb * 2 - 1;
 
 #if UNITY_UV_STARTS_AT_TOP
 				fixed4 acol = tex2D(_Gradient, float2(i.color.r, 1));
