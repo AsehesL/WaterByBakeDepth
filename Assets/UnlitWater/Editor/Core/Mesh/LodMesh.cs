@@ -28,10 +28,11 @@ namespace ASL.UnlitWater
         private float m_OffsetZ;
         private int m_MaxLod;
         private int m_Samples;
+        private float m_UVDir;
 
         private bool m_Support;
 
-        public LodMesh(int xCells, int zCells, float xWidth, float zWidth, float offsetX, float offsetZ, int maxLod, int samples)
+        public LodMesh(int xCells, int zCells, float xWidth, float zWidth, float offsetX, float offsetZ, int maxLod, float uvDir, int samples)
         {
             m_Cells = new LodMeshCell[xCells, zCells];
             m_XCells = xCells;
@@ -42,6 +43,7 @@ namespace ASL.UnlitWater
             m_OffsetZ = offsetZ;
             m_MaxLod = maxLod;
             m_Samples = samples;
+            m_UVDir = uvDir;
 
             if (xCells > 0 && zCells > 0 && zWidth > 0 && xWidth > 0 && maxLod >= 0 && samples >= 1)
                 m_Support = true;
@@ -123,7 +125,7 @@ namespace ASL.UnlitWater
                 }
             }
             //生成网格
-            Mesh mesh = cache.Apply(texture, m_Samples);
+            Mesh mesh = cache.Apply(texture, m_UVDir, m_Samples);
             return mesh;
         }
 

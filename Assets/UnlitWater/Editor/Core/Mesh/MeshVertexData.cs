@@ -162,7 +162,7 @@ namespace ASL.UnlitWater
         /// 应用网格（产生没有重合顶点的mesh）
         /// </summary>
         /// <returns></returns>
-        public Mesh Apply(Texture2D texture, int samples)
+        public Mesh Apply(Texture2D texture, float uvDir, int samples)
         {
             List<Vector3> vlist = new List<Vector3>();
             List<Vector2> ulist = new List<Vector2>();
@@ -180,7 +180,13 @@ namespace ASL.UnlitWater
                 dt.Value.index = vlist.Count;
 
                 vlist.Add(dt.Value.vertex);
-                ulist.Add(dt.Value.uv);
+
+                Vector2 uv = dt.Value.uv;
+                float sinag = Mathf.Sin(Mathf.Deg2Rad*uvDir);
+                float cosag = Mathf.Cos(Mathf.Deg2Rad*uvDir);
+                uv = new Vector2(uv.x*cosag - uv.y*sinag, uv.x*sinag + uv.y*cosag);
+
+                ulist.Add(uv);
                 clist.Add(dt.Value.color);
             }
 

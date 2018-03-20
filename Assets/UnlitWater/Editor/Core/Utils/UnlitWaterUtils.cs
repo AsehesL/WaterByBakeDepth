@@ -18,7 +18,7 @@ namespace ASL.UnlitWater
         /// <param name="maxLod"></param>
         /// <param name="discardSamples"></param>
         public static void GenerateMesh(GameObject target, Texture2D tex, Vector2 size, int xCells, int zCells,
-            int maxLod, int discardSamples)
+            int maxLod, float uvDir, int discardSamples)
         {
             string savePath = EditorUtility.SaveFilePanel("保存Mesh路径", "Assets/", "New Water Mesh", "asset");
             if (string.IsNullOrEmpty(savePath))
@@ -31,7 +31,7 @@ namespace ASL.UnlitWater
             if (target == null)
                 return;
             var unlitMesh = new ASL.UnlitWater.LodMesh(xCells, zCells, size.x*2, size.y*2,
-                -size.x, -size.y, maxLod, discardSamples);
+                -size.x, -size.y, maxLod, uvDir, discardSamples);
             Mesh mesh = unlitMesh.GenerateMesh(tex);
             if (!mesh)
                 return;

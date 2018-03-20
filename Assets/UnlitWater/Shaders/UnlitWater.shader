@@ -2,17 +2,26 @@
 {
 	Properties
 	{
-		_MainTex ("Texture", 2D) = "white" {}
-		_NormalTex("NormalTex", 2D) = "black" {}
-		_Gradient("Gradient", 2D) = "white" {}
-		_Sky("Sky", cube) = "" {}
+		_FoamTex("泡沫贴图(R:海浪泡沫,G:岸边泡沫,B:海浪扰动)", 2D) = "white" {}
+		[Normal]_NormalTex("法线贴图", 2D) = "bump" {}
+		_WaveTex("海浪贴图(R:海浪遮罩,G:海浪渐变)", 2D) = "white" {}
+		_Gradient("海水颜色渐变", 2D) = "white" {}
+		_Sky("反射天空盒", cube) = "" {}
 
-		_Fresnel("Fresnel", float) = 0
+		[Space]
+		_WaveParams ("海浪参数(x:海浪范围,y:海浪偏移,z:海浪扰动,w:浪花泡沫扰动)", vector) = (0,0,0,0)
+		_FoamParams("岸边泡沫参数(x:淡入,y:淡出,z:宽度,w:透明度)", vector) = (0,0,0,0)
+		_Speed("速度参数(x:风速,y:海浪速度)", vector) = (0,0,0,0)
 
-		_Speed("Speed(x:wavespeed)", vector) = (0,0,0,0)
-
-		//_Specular("Specular", float) = 0
-		//_Gloss("Gloss", float) = 0
+		[Space]
+		_NormalScale ("法线缩放", range(0, 1)) = 1
+		_Fresnel("菲涅尔系数", float) = 0
+		
+		_Specular("Specular", float) = 0
+		_Gloss("Gloss", float) = 0
+		_FoamColor ("泡沫颜色", color) = (1,1,1,1)
+		_SpecColor ("高光颜色", color) = (0.4,0.4,0.4,1)
+		_LightDir("光照方向", vector) = (0, 0, 0, 0)
 	}
 	SubShader
 	{
@@ -33,7 +42,8 @@
 
 			struct v2f
 			{
-				float2 uv_MainTex : TEXCOORD0;
+				float2 uv_FoamTex : TEXCOORD0;
+				//float2 uv_WaveTex : TEXCOORD1;
 				float2 uv_NormalTex : TEXCOORD1;
 				UNITY_FOG_COORDS(2)
 				float4 TW0:TEXCOORD3;
@@ -43,10 +53,20 @@
 				float4 color : COLOR;
 			};
 
-			sampler2D _MainTex;
-			float4 _MainTex_ST;
+			sampler2D _FoamTex;
+			float4 _FoamTex_ST;
+
+			sampler2D _WaveTex;
+			//float4 _WaveTex_ST;
 
 			half4 _Speed;
+			//fixed _WaveRange;
+			//fixed _WaveNoise;
+			fixed4 _WaveParams;
+
+			half _NormalScale;
+
+			half4 _FoamParams;
 
 			sampler2D _Gradient;
 			sampler2D _NormalTex;
@@ -56,18 +76,22 @@
 
 			samplerCUBE _Sky;
 
-			//half _Specular;
-			//fixed _Gloss;
+			half _Specular;
+			fixed _Gloss;
 
-			//half4 _LightDir;
+			half4 _LightDir;
+			half4 _SpecColor;
+
+			fixed4 _FoamColor;
 			
 			v2f vert (appdata_full v)
 			{
 				v2f o;
 				o.vertex = UnityObjectToClipPos(v.vertex);
 
-				o.uv_MainTex = TRANSFORM_TEX(v.texcoord, _MainTex);
+				o.uv_FoamTex = TRANSFORM_TEX(v.texcoord, _FoamTex);
 				o.uv_NormalTex = TRANSFORM_TEX(v.texcoord, _NormalTex);
+				//o.uv_WaveTex = TRANSFORM_TEX(v.texcoord, _WaveTex);
 
 				UNITY_TRANSFER_FOG(o,o.vertex);
 
@@ -87,33 +111,51 @@
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
+
 				fixed4 normalCol = (tex2D(_NormalTex, i.uv_NormalTex + fixed2(_Time.x*_Speed.x, 0)) + tex2D(_NormalTex, fixed2(_Time.x*_Speed.x + i.uv_NormalTex.y, i.uv_NormalTex.x))) / 2;
+			
 				half3 worldNormal = UnpackNormal(normalCol);
+
+				//泡沫使用法线贴图的rg进行扰动
+				half3 foam = tex2D(_FoamTex, i.uv_FoamTex +worldNormal.xy*_WaveParams.w).rgb;
+				
+				worldNormal = lerp(half3(0, 0, 1), worldNormal, _NormalScale);
 				worldNormal = normalize(fixed3(dot(i.TW0.xyz, worldNormal), dot(i.TW1.xyz, worldNormal), dot(i.TW2.xyz, worldNormal)));
-#if UNITY_UV_STARTS_AT_TOP
-				fixed4 col = tex2D(_Gradient, float2(i.color.r, 1));
-#else
-				fixed4 col = tex2D(_Gradient, float2(i.color.r, 0));
-#endif
+
+				fixed4 col = tex2D(_Gradient, float2(i.color.r, 0.5));
+				
+
 
 				half3 worldPos = half3(i.TW0.w, i.TW1.w, i.TW2.w);
 
 				half3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
 				half3 refl = reflect(-viewDir, worldNormal);
 
-				//col = texCUBE(_Sky, refl);
-
 				half vdn = saturate(pow(dot(viewDir, worldNormal), _Fresnel));
 
 				col.rgb = lerp(texCUBE(_Sky, refl), col.rgb, vdn);
-				//half3 h = normalize(viewDir - normalize(_LightDir.xyz));
-				//fixed ndh = max(0, dot(worldNormal, h));
 
-				//col += _Gloss*pow(ndh, _Specular*128.0)*fixed4(0.4, 0.4, 0.4, 1);
+
+				fixed wave1 = tex2D(_WaveTex, float2(i.color.r + _WaveParams.y + _WaveParams.x*sin(_Time.x*_Speed.y + _WaveParams.z*foam.b), 0)).r;
+				fixed wave2 = tex2D(_WaveTex, float2(i.color.r + _WaveParams.y + _WaveParams.x*cos(_Time.x*_Speed.y + _WaveParams.z*foam.b), 0)).r;
+				fixed waveAlpha = tex2D(_WaveTex, float2(i.color.r, 0)).g;
+
+				fixed sfadein = 1 - saturate((_FoamParams.x - i.color.r) / _FoamParams.x);
+				fixed sfadeout = 1 - saturate((i.color.r - _FoamParams.y) / _FoamParams.z);
+
+				col+= (_FoamColor - col)* (wave1 + wave2)*waveAlpha*foam.r*i.color.b;
+				col += (_FoamColor - col)* sfadein*sfadeout *_FoamParams.w*foam.g*i.color.g;
+
+				half3 h = normalize(viewDir - normalize(_LightDir.xyz));
+				fixed ndh = max(0, dot(worldNormal, h));
+
+				col += _Gloss*pow(ndh, _Specular*128.0)*_SpecColor;
 				// sample the texture
 				//fixed4 col = tex2D(_MainTex, i.uv);
 				// apply fog
 				UNITY_APPLY_FOG(i.fogCoord, col);
+
+				col.a *= i.color.a;
 				return col;
 			}
 			ENDCG

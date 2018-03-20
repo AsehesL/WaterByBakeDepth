@@ -47,6 +47,8 @@ public class UnlitWaterGenerator : MDIEditorWindow
 
     private Transform m_LightTransform;
 
+    private float m_UVDir;
+
     private UnlitWaterPainter m_Painter;
     
 
@@ -85,6 +87,11 @@ public class UnlitWaterGenerator : MDIEditorWindow
                 UnlitWaterHandles.DrawUnlitWaterCells(
                     m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y),
                     Quaternion.Euler(0, m_RotY, 0), m_Size, m_CellSizeX, m_CellSizeZ, m_MaxLod);
+
+                float sz = Mathf.Max(m_Size.x, m_Size.y)/10;
+                UnlitWaterHandles.DrawDirArrow(
+                    m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y), m_UVDir, sz,
+                    Color.cyan);
             }
 
             m_Painter.DrawSceneGUI(m_TargetGameObject);
@@ -131,8 +138,9 @@ public class UnlitWaterGenerator : MDIEditorWindow
         m_Size.y = Mathf.Max(0.01f, EditorGUI.FloatField(new Rect(0, 60, rect.width - 10, 17), "Height", m_Size.y));
         m_CellSizeX = Mathf.Max(1, EditorGUI.IntField(new Rect(0, 80, rect.width - 10, 17), "CellWidth", m_CellSizeX));
         m_CellSizeZ = Mathf.Max(1, EditorGUI.IntField(new Rect(0, 100, rect.width - 10, 17), "CellHeight", m_CellSizeZ));
-        m_MaxLod = EditorGUI.IntSlider(new Rect(0, 120, rect.width - 10, 17), "最大Lod", m_MaxLod, 0, 8);
-        m_DiscardSamples = EditorGUI.IntSlider(new Rect(0, 140, rect.width - 10, 17), "不可见三角剔除采样", m_DiscardSamples, 1,
+        m_UVDir = EditorGUI.Slider(new Rect(0, 120, rect.width - 10, 17), "UV水平方向", m_UVDir, 0, 360);
+        m_MaxLod = EditorGUI.IntSlider(new Rect(0, 140, rect.width - 10, 17), "最大Lod", m_MaxLod, 0, 8);
+        m_DiscardSamples = EditorGUI.IntSlider(new Rect(0, 160, rect.width - 10, 17), "不可见三角剔除采样", m_DiscardSamples, 1,
             4);
 
         GUI.enabled = guienable;
@@ -196,7 +204,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
             if (GUI.Button(new Rect((rect.width - 10) / 2, 220, (rect.width - 10) / 2, 16), "生成Mesh",
                 GUIStyleCache.GetStyle("ButtonRight")))
             {
-                UnlitWaterUtils.GenerateMesh(m_TargetGameObject, m_Texture, m_Size, m_CellSizeX, m_CellSizeZ, m_MaxLod, m_DiscardSamples);
+                UnlitWaterUtils.GenerateMesh(m_TargetGameObject, m_Texture, m_Size, m_CellSizeX, m_CellSizeZ, m_MaxLod, m_UVDir, m_DiscardSamples);
             }
         }
         else
