@@ -43,7 +43,6 @@
 			struct v2f
 			{
 				float2 uv_FoamTex : TEXCOORD0;
-				//float2 uv_WaveTex : TEXCOORD1;
 				float2 uv_NormalTex : TEXCOORD1;
 				UNITY_FOG_COORDS(2)
 				float4 TW0:TEXCOORD3;
@@ -57,11 +56,9 @@
 			float4 _FoamTex_ST;
 
 			sampler2D _WaveTex;
-			//float4 _WaveTex_ST;
 
 			half4 _Speed;
-			//fixed _WaveRange;
-			//fixed _WaveNoise;
+			
 			fixed4 _WaveParams;
 
 			half _NormalScale;
