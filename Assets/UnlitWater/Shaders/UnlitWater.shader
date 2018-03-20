@@ -100,6 +100,7 @@
 				fixed3 worldTangent = UnityObjectToWorldDir(v.tangent.xyz);
 				fixed tangentSign = v.tangent.w * unity_WorldTransformParams.w;
 				fixed3 worldBinormal = cross(worldNormal, worldTangent) * tangentSign;
+
 				o.TW0 = float4(worldTangent.x, worldBinormal.x, worldNormal.x, worldPos.x);
 				o.TW1 = float4(worldTangent.y, worldBinormal.y, worldNormal.y, worldPos.y);
 				o.TW2 = float4(worldTangent.z, worldBinormal.z, worldNormal.z, worldPos.z);
@@ -111,7 +112,7 @@
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
-
+				//采样法线贴图
 				fixed4 normalCol = (tex2D(_NormalTex, i.uv_NormalTex + fixed2(_Time.x*_Speed.x, 0)) + tex2D(_NormalTex, fixed2(_Time.x*_Speed.x + i.uv_NormalTex.y, i.uv_NormalTex.x))) / 2;
 			
 				half3 worldNormal = UnpackNormal(normalCol);
@@ -122,10 +123,10 @@
 				worldNormal = lerp(half3(0, 0, 1), worldNormal, _NormalScale);
 				worldNormal = normalize(fixed3(dot(i.TW0.xyz, worldNormal), dot(i.TW1.xyz, worldNormal), dot(i.TW2.xyz, worldNormal)));
 
+				//根据顶点颜色r通道采样海水渐变
 				fixed4 col = tex2D(_Gradient, float2(i.color.r, 0.5));
 				
-
-
+				//采样反射天空盒
 				half3 worldPos = half3(i.TW0.w, i.TW1.w, i.TW2.w);
 
 				half3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
@@ -136,6 +137,7 @@
 				col.rgb = lerp(texCUBE(_Sky, refl), col.rgb, vdn);
 
 
+				//计算海浪和岸边泡沫
 				fixed wave1 = tex2D(_WaveTex, float2(i.color.r + _WaveParams.y + _WaveParams.x*sin(_Time.x*_Speed.y + _WaveParams.z*foam.b), 0)).r;
 				fixed wave2 = tex2D(_WaveTex, float2(i.color.r + _WaveParams.y + _WaveParams.x*cos(_Time.x*_Speed.y + _WaveParams.z*foam.b), 0)).r;
 				fixed waveAlpha = tex2D(_WaveTex, float2(i.color.r, 0)).g;
@@ -146,15 +148,16 @@
 				col+= (_FoamColor - col)* (wave1 + wave2)*waveAlpha*foam.r*i.color.b;
 				col += (_FoamColor - col)* sfadein*sfadeout *_FoamParams.w*foam.g*i.color.g;
 
+				//计算高光
 				half3 h = normalize(viewDir - normalize(_LightDir.xyz));
 				fixed ndh = max(0, dot(worldNormal, h));
 
 				col += _Gloss*pow(ndh, _Specular*128.0)*_SpecColor;
-				// sample the texture
-				//fixed4 col = tex2D(_MainTex, i.uv);
+				
 				// apply fog
 				UNITY_APPLY_FOG(i.fogCoord, col);
 
+				//应用顶点透明度
 				col.a *= i.color.a;
 				return col;
 			}
