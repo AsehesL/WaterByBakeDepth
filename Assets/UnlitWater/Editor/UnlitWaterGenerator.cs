@@ -225,7 +225,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
             (Transform)
                 EditorGUI.ObjectField(new Rect(0, 20, (rect.width-10)*0.8f, 17),"平行光", m_LightTransform, typeof(Transform),
                     true);
-        if (GUI.Button(new Rect((rect.width-10)*0.8f, 20, (rect.width - 10)*0.2f, 17), "烘焙光照方向"))
+        if (GUI.Button(new Rect((rect.width-10)*0.8f, 20, (rect.width - 10)*0.2f, 17), "设置光照方向"))
         {
             if (m_LightTransform)
                 UnlitWaterUtils.BakeLightDir(m_TargetGameObject, m_LightTransform.forward);
