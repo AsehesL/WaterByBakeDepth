@@ -102,3 +102,5 @@
 
 **Ps.编辑器部分采用USubWindow扩展来快速开发EditorWindow，详见：https://github.com/AsehesL/USubWindow**
 
+** 更多内容关注我的博客：http://www.lsngo.net **
+
