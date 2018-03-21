@@ -6,7 +6,7 @@
 
 
 
-一、说明：
+## 一、说明：
 
 针对移动平台编写的水材质shader，考虑到各方面性能因素，为了实现类似基于深度图的水体深浅效果，采用预先从上往下渲染深度图并映射到Mesh顶点色的方式实现：
 
@@ -34,9 +34,9 @@
 
 
 
-二、使用方法：
+## 二、使用方法：
 
-1.如何生成LodMesh:
+### 1.如何生成LodMesh:
 
 1).点击GameObject/UnlitWater/Create UnlitWater打开编辑器界面
 
@@ -64,7 +64,7 @@
 
 
 
-2.如何应用顶点色到普通的模型Mesh上:
+### 2.如何应用顶点色到普通的模型Mesh上:
 
 1).打开编辑器
 
@@ -78,13 +78,13 @@
 
 
 
-3.如何设置光照方向:
+### 3.如何设置光照方向:
 
 将灯光拖入"平行光"选框，点击设置光照方向
 
 
 
-4.如何绘制顶点色:
+### 4.如何绘制顶点色:
 
 1).打开编辑器
 
@@ -100,5 +100,5 @@
 
 
 
-Ps.编辑器部分采用USubWindow扩展来快速开发EditorWindow，详见：https://github.com/AsehesL/USubWindow
+**Ps.编辑器部分采用USubWindow扩展来快速开发EditorWindow，详见：https://github.com/AsehesL/USubWindow**
 
