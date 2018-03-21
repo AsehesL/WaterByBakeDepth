@@ -48,7 +48,7 @@ namespace ASL.UnlitWater
             Handles.DrawLine(pos12, pos8);
         }
 
-        public static void DrawUnlitWaterCells(Vector3 position, Quaternion rotation, Vector2 size, int cellSizeX,
+        public static void DrawUnlitWaterLodCells(Vector3 position, Quaternion rotation, Vector2 size, int cellSizeX,
             int cellSizeZ, int maxLod)
         {
             float deltax = size.x*2/cellSizeX;
@@ -92,6 +92,29 @@ namespace ASL.UnlitWater
                     Vector3 posf = position + rotation*new Vector3(size.x, 0, -size.y + i*deltaz + j*loddeltaz);
                     Handles.DrawLine(posb, posf);
                 }
+            }
+        }
+
+        public static void DrawUnlitWaterGrid(Vector3 position, Quaternion rotation, Vector2 size, int cellSizeX,
+            int cellSizeZ)
+        {
+            float deltax = size.x*2/cellSizeX;
+            float deltaz = size.y*2/cellSizeZ;
+
+            for (int i = 0; i <= cellSizeX; i++)
+            {
+                Handles.color = Color.yellow;
+                Vector3 posb = position + rotation * new Vector3(-size.x+i*deltax, 0, -size.y);
+                Vector3 posf = position + rotation * new Vector3(-size.x+i*deltax, 0, size.y);
+                Handles.DrawLine(posb, posf);
+            }
+
+            for (int i = 0; i <= cellSizeZ; i++)
+            {
+                Handles.color = Color.yellow;
+                Vector3 posb = position + rotation * new Vector3(-size.x, 0, -size.y + i * deltaz);
+                Vector3 posf = position + rotation * new Vector3(size.x, 0, -size.y+i*deltaz);
+                Handles.DrawLine(posb, posf);
             }
         }
 

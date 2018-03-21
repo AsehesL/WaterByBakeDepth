@@ -16,13 +16,8 @@ namespace ASL.UnlitWater
             public Color color;
             public int index;
             public bool visible;
-
-            private float m_BeginX;
-            private float m_BeginY;
+            
             private int m_Width;
-            private int m_Height;
-            private float m_CellSizeX;
-            private float m_CellSizeY;
 
             public VertexData(Vector3 vertex, float beginx, float beginy, int width, int height, float cellSizeX, float cellSizeY)
             {
@@ -32,13 +27,8 @@ namespace ASL.UnlitWater
                 uv = new Vector2();
                 uv.x = (vertex.x - beginx) / ((width - 1) * cellSizeX);
                 uv.y = (vertex.z - beginy) / ((height - 1) * cellSizeY);
-
-                m_BeginX = beginx;
-                m_BeginY = beginy;
+                
                 m_Width = width;
-                m_Height = height;
-                m_CellSizeX = cellSizeX;
-                m_CellSizeY = cellSizeY;
             }
 
             public void Refresh(Texture2D tex, int samples)

@@ -3,6 +3,9 @@ using System.Collections;
 
 namespace ASL.UnlitWater
 {
+    /// <summary>
+    /// Mesh生成器类型
+    /// </summary>
     public enum MeshGeneratorType
     {
         /// <summary>
@@ -24,6 +27,11 @@ namespace ASL.UnlitWater
     /// </summary>
     internal interface IMeshGenerator
     {
+        /// <summary>
+        /// 根据贴图生成mesh
+        /// </summary>
+        /// <param name="texture"></param>
+        /// <returns></returns>
         Mesh GenerateMesh(Texture2D texture);
 
         void SetSize(Vector2 size);
@@ -36,7 +44,7 @@ namespace ASL.UnlitWater
     }
 
     /// <summary>
-    /// 由于所有类型的网格生成器均实现IMeshGenerator接口，考虑到序列化会出现问题，即一旦项目中有重编的代码或导入新资源，会导致MeshGenerator编辑的参数丢失，因此采用以下方法
+    /// 由于所有类型的网格生成器均实现IMeshGenerator接口，考虑到使用多态会导致序列化出现问题，即一旦项目中有重编的代码或导入新资源，会导致MeshGenerator编辑的参数丢失，因此采用以下方法，预先保存所有类型的Generator对象
     /// </summary>
     [System.Serializable]
     internal class MeshGeneratorFactory

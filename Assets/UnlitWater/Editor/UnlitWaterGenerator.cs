@@ -85,7 +85,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
         if ((int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject)
         {
 
-            if (meshGenerator != null)
+            if (meshGenerator != null && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None)
                 meshGenerator.DrawSceneGUI(m_TargetGameObject, m_LocalCenter, m_RotY, m_MinHeight, m_MaxHeight);
 
             m_Painter.DrawSceneGUI(m_TargetGameObject);
@@ -120,7 +120,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
         m_TargetGameObject =
             EditorGUI.ObjectField(new Rect(0, 0, rect.width - 10, 17), "载体目标", m_TargetGameObject, typeof (GameObject), true) as
                 GameObject;
-        m_MeshGeneratorType = (MeshGeneratorType)EditorGUI.EnumPopup(new Rect(0, 20, rect.width - 10, 17), "是否自动生成Mesh", m_MeshGeneratorType);
+        m_MeshGeneratorType = (MeshGeneratorType)EditorGUI.EnumPopup(new Rect(0, 20, rect.width - 10, 17), "Mesh生成器类型", m_MeshGeneratorType);
         if (EditorGUI.EndChangeCheck())
         {
             CheckTargetCorrectness();
@@ -216,7 +216,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
     [EWSubWindow("材质设置", EWSubWindowIcon.Material)]
     private void DrawSetting(Rect rect)
     {
-        bool guienable = GUI.enabled;
+        bool guienable = true;
         GUI.enabled = (int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject && guienable && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None;
         GUI.BeginGroup(new Rect(rect.x + 5, rect.y + 5, rect.width - 10, rect.height - 10));
 

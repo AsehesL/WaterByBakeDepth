@@ -4,6 +4,9 @@ using UnityEditor;
 
 namespace ASL.UnlitWater
 {
+    /// <summary>
+    /// 从模型文件生成的Mesh
+    /// </summary>
     [System.Serializable]
     internal class ModelMesh : IMeshGenerator
     {
@@ -25,6 +28,7 @@ namespace ASL.UnlitWater
 
         public Mesh GenerateMesh(Texture2D texture)
         {
+            //模型文件生成的Mesh不会调用该方法
             return null;
         }
 

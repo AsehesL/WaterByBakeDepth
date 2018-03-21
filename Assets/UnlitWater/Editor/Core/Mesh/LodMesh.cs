@@ -26,30 +26,12 @@ namespace ASL.UnlitWater
         public int cellSizeZ;
         public float widthX;
         public float widthZ;
-        //private float m_OffsetX;
-        //private float m_OffsetZ;
+        
         public int maxLod;
         public int samples = 2;
         public float uvDir;
 
-        //private bool m_Support;
 
-        //public LodMesh()
-        //{
-        //    //m_Cells = new LodMeshCell[xCells, zCells];
-        //    //cellSizeX = xCells;
-        //    //cellSizeZ = zCells;
-        //    //widthX = xWidth;
-        //    //widthZ = zWidth;
-        //    //m_OffsetX = offsetX;
-        //    //m_OffsetZ = offsetZ;
-        //    //maxLod = maxLod;
-        //    //samples = samples;
-        //    //uvDir = uvDir;
-
-        //    //if (xCells > 0 && zCells > 0 && zWidth > 0 && xWidth > 0 && maxLod >= 0 && samples >= 1)
-        //    //    m_Support = true;
-        //}
 
         public void DrawGUI()
         {
@@ -69,7 +51,7 @@ namespace ASL.UnlitWater
                Quaternion.Euler(0, rotY, 0), new Vector2(widthX, widthZ),
                new Vector2(minHeight, maxHeight), Color.green);
 
-            UnlitWaterHandles.DrawUnlitWaterCells(
+            UnlitWaterHandles.DrawUnlitWaterLodCells(
                     target.transform.position + new Vector3(offset.x, 0, offset.y),
                     Quaternion.Euler(0, rotY, 0), new Vector2(widthX, widthZ), cellSizeX, cellSizeZ, maxLod);
 
