@@ -22,23 +22,16 @@ public class UnlitWaterGenerator : MDIEditorWindow
     
 
     private GameObject m_TargetGameObject;
-    private bool m_AutoGenerateMesh;
 
     private TargetErrorDef m_TargetErrorDef;
 
-    private int m_CellSizeX = 1;
-    private int m_CellSizeZ = 1;
-    private int m_MaxLod;
-
     private Vector2 m_LocalCenter;
-    private Vector2 m_Size;
+    //private Vector2 m_Size;
 
     private float m_MaxDepth = 1;
     private float m_DepthPower = 1;
 
     private float m_RotY = 0;  
-
-    private int m_DiscardSamples = 2; 
 
     private float m_MaxHeight = 1;
     private float m_MinHeight = 1;
@@ -47,10 +40,22 @@ public class UnlitWaterGenerator : MDIEditorWindow
 
     private Transform m_LightTransform;
 
-    private float m_UVDir;
-
     private UnlitWaterPainter m_Painter;
-    
+
+    private IMeshGenerator meshGenerator
+    {
+        get
+        {
+            if (m_Factory != null)
+                return m_Factory.GetGenerator(m_MeshGeneratorType);
+            return null;
+        }   
+    }
+
+    private MeshGeneratorType m_MeshGeneratorType;
+
+    private MeshGeneratorFactory m_Factory;
+
 
     [MenuItem("GameObject/UnlitWater/Create UnlitWater", false, 2500)]
     static void Init()
@@ -62,6 +67,8 @@ public class UnlitWaterGenerator : MDIEditorWindow
     protected override void OnEnable()
     {
         base.OnEnable();
+        if (m_Factory == null)
+            m_Factory = new MeshGeneratorFactory();
         if(m_Painter == null)
             m_Painter = new UnlitWaterPainter();
         SceneView.onSceneGUIDelegate += OnSceneGUI; 
@@ -77,22 +84,9 @@ public class UnlitWaterGenerator : MDIEditorWindow
     {
         if ((int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject)
         {
-            UnlitWaterHandles.DrawUnlitWaterArea(
-                m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y),
-                Quaternion.Euler(0, m_RotY, 0), m_Size,
-                new Vector2(m_MinHeight, m_MaxHeight), Color.green);
 
-            if (m_AutoGenerateMesh)
-            {
-                UnlitWaterHandles.DrawUnlitWaterCells(
-                    m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y),
-                    Quaternion.Euler(0, m_RotY, 0), m_Size, m_CellSizeX, m_CellSizeZ, m_MaxLod);
-
-                float sz = Mathf.Max(m_Size.x, m_Size.y)/10;
-                UnlitWaterHandles.DrawDirArrow(
-                    m_TargetGameObject.transform.position + new Vector3(m_LocalCenter.x, 0, m_LocalCenter.y), m_UVDir, sz,
-                    Color.cyan);
-            }
+            if (meshGenerator != null)
+                meshGenerator.DrawSceneGUI(m_TargetGameObject, m_LocalCenter, m_RotY, m_MinHeight, m_MaxHeight);
 
             m_Painter.DrawSceneGUI(m_TargetGameObject);
         }
@@ -126,24 +120,24 @@ public class UnlitWaterGenerator : MDIEditorWindow
         m_TargetGameObject =
             EditorGUI.ObjectField(new Rect(0, 0, rect.width - 10, 17), "载体目标", m_TargetGameObject, typeof (GameObject), true) as
                 GameObject;
-        m_AutoGenerateMesh = EditorGUI.Toggle(new Rect(0, 20, rect.width - 10, 17), "是否自动生成Mesh", m_AutoGenerateMesh);
+        m_MeshGeneratorType = (MeshGeneratorType)EditorGUI.EnumPopup(new Rect(0, 20, rect.width - 10, 17), "是否自动生成Mesh", m_MeshGeneratorType);
         if (EditorGUI.EndChangeCheck())
         {
             CheckTargetCorrectness();
-            UnlitWaterUtils.CalculateAreaInfo(m_TargetGameObject, m_AutoGenerateMesh, ref m_LocalCenter, ref m_Size);
+            Vector2 size = default(Vector2);
+            UnlitWaterUtils.CalculateAreaInfo(m_TargetGameObject, m_MeshGeneratorType != MeshGeneratorType.ModelFile, ref m_LocalCenter, ref size);
+            m_Factory.SetSize(m_MeshGeneratorType, size);
         }
+        
 
-        GUI.enabled = guienable && m_AutoGenerateMesh;
-        m_Size.x = Mathf.Max(0.01f, EditorGUI.FloatField(new Rect(0, 40, rect.width - 10, 17), "Width", m_Size.x));
-        m_Size.y = Mathf.Max(0.01f, EditorGUI.FloatField(new Rect(0, 60, rect.width - 10, 17), "Height", m_Size.y));
-        m_CellSizeX = Mathf.Max(1, EditorGUI.IntField(new Rect(0, 80, rect.width - 10, 17), "CellWidth", m_CellSizeX));
-        m_CellSizeZ = Mathf.Max(1, EditorGUI.IntField(new Rect(0, 100, rect.width - 10, 17), "CellHeight", m_CellSizeZ));
-        m_UVDir = EditorGUI.Slider(new Rect(0, 120, rect.width - 10, 17), "UV水平方向", m_UVDir, 0, 360);
-        m_MaxLod = EditorGUI.IntSlider(new Rect(0, 140, rect.width - 10, 17), "最大Lod", m_MaxLod, 0, 8);
-        m_DiscardSamples = EditorGUI.IntSlider(new Rect(0, 160, rect.width - 10, 17), "不可见三角剔除采样", m_DiscardSamples, 1,
-            4);
+        GUI.Box(new Rect(3, 45, rect.width - 16, rect.height - 140), "", GUI.skin.FindStyle("WindowBackground"));
 
-        GUI.enabled = guienable;
+        GUILayout.BeginArea(new Rect(5, 48, rect.width - 20, rect.height - 146));
+
+        if (meshGenerator != null)
+            meshGenerator.DrawGUI();
+        GUILayout.EndArea();
+        
 
         if (m_TargetErrorDef != TargetErrorDef.None)
         {
@@ -170,41 +164,40 @@ public class UnlitWaterGenerator : MDIEditorWindow
                 new GUIContent("下方高度", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "调整下方高度直到刚好超过水底最深处"),
                 m_MinHeight));
 
-        GUI.enabled = (int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None && guienable && !m_AutoGenerateMesh;
+        GUI.enabled = (int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None && guienable && m_MeshGeneratorType == MeshGeneratorType.ModelFile;
         m_LocalCenter = EditorGUI.Vector2Field(new Rect(0, 60, rect.width - 10, 40),
             new GUIContent("位置偏移", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "调整渲染区域的坐标偏移"),
             m_LocalCenter);
-        GUI.enabled = (int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None && guienable;
 
-        m_Size = EditorGUI.Vector2Field(new Rect(0, 100, rect.width - 10, 40),
-          new GUIContent("区域大小", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "调整渲染区域的区域大小"),
-          m_Size);
-        m_RotY = EditorGUI.FloatField(new Rect(0, 140, rect.width - 10, 17),
+        
+        GUI.enabled = (int)m_TargetErrorDef <= (int)TargetErrorDef.WillReplaceMesh && m_TargetGameObject && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None && guienable;
+        m_RotY = EditorGUI.FloatField(new Rect(0, 100, rect.width - 10, 17),
             new GUIContent("Y轴旋转", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "调整渲染区域的Y轴旋转"),
             m_RotY);
 
-        GUI.Label(new Rect(0, 160, position.width - 10, 17), "渲染设置");
+        GUI.Label(new Rect(0, 120, position.width - 10, 17), "渲染设置");
         m_MaxDepth = Mathf.Max(0,
-           EditorGUI.FloatField(new Rect(0, 180, rect.width - 10, 17),
+           EditorGUI.FloatField(new Rect(0, 140, rect.width - 10, 17),
                new GUIContent("最大深度范围", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "控制渲染的最大深度范围，默认为1"),
                m_MaxDepth));
         m_DepthPower = Mathf.Max(0, 
-           EditorGUI.FloatField(new Rect(0, 200, rect.width - 10, 17),
+           EditorGUI.FloatField(new Rect(0, 160, rect.width - 10, 17),
                new GUIContent("深度增强", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "控制渲染深度的效果增强或减弱，默认为1表示不增强"),
                m_DepthPower));
 
         if (GUI.Button(new Rect(0, 220, (rect.width - 10) / 2, 16), "渲染", GUIStyleCache.GetStyle("ButtonLeft")))
         {
-            UnlitWaterUtils.RenderDepthTexture(m_TargetGameObject, m_LocalCenter, m_Size,
+            Vector2 size = m_Factory.GetSize(m_MeshGeneratorType);
+            UnlitWaterUtils.RenderDepthTexture(m_TargetGameObject, m_LocalCenter, size,
                 Quaternion.Euler(90, m_RotY, 0), m_MaxHeight, m_MinHeight, m_MaxDepth, m_DepthPower, ref m_Texture);
         }
         GUI.enabled = m_Texture != null && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None && guienable;
-        if (m_AutoGenerateMesh)
+        if (m_MeshGeneratorType != MeshGeneratorType.ModelFile)
         {
             if (GUI.Button(new Rect((rect.width - 10) / 2, 220, (rect.width - 10) / 2, 16), "生成Mesh",
                 GUIStyleCache.GetStyle("ButtonRight")))
             {
-                UnlitWaterUtils.GenerateMesh(m_TargetGameObject, m_Texture, m_Size, m_CellSizeX, m_CellSizeZ, m_MaxLod, m_UVDir, m_DiscardSamples);
+                UnlitWaterUtils.GenerateMesh(m_TargetGameObject, m_Texture, meshGenerator);
             }
         }
         else
@@ -212,7 +205,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
             if (GUI.Button(new Rect((rect.width - 10)/2, 220, (rect.width - 10)/2, 16), "应用到顶点色",
                 GUIStyleCache.GetStyle("ButtonRight")))
             {
-                UnlitWaterUtils.ApplyToVertexColor(m_TargetGameObject, m_Texture, m_LocalCenter, m_Size, m_MinHeight, m_MaxHeight);
+                UnlitWaterUtils.ApplyToVertexColor(m_TargetGameObject, m_Texture, m_LocalCenter, m_Factory.GetSize(m_MeshGeneratorType), m_MinHeight, m_MaxHeight);
             }
         }
 
@@ -355,7 +348,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
             m_TargetErrorDef = TargetErrorDef.MeshFromModel;
             return;
         }
-        if (m_AutoGenerateMesh)
+        if (m_MeshGeneratorType != MeshGeneratorType.ModelFile)
         {
             if (mf && mf.sharedMesh)
             {

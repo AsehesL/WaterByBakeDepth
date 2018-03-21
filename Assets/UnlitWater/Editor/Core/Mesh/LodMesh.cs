@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEditor;
 
 namespace ASL.UnlitWater
 {
@@ -7,6 +8,7 @@ namespace ASL.UnlitWater
     /// Lod网格
     /// 该类型网格根据传入的纹理，将自动在水岸与陆地的交界处生成最密集的网格，越远离海岸，网格越稀疏
     /// </summary>
+    [System.Serializable]
     internal class LodMesh : IMeshGenerator
     {
         /// <summary>
@@ -20,50 +22,91 @@ namespace ASL.UnlitWater
 
         private LodMeshCell[,] m_Cells;
 
-        private int m_XCells;
-        private int m_ZCells;
-        private float m_XWidth;
-        private float m_ZWidth;
-        private float m_OffsetX;
-        private float m_OffsetZ;
-        private int m_MaxLod;
-        private int m_Samples;
-        private float m_UVDir;
+        public int cellSizeX;
+        public int cellSizeZ;
+        public float widthX;
+        public float widthZ;
+        //private float m_OffsetX;
+        //private float m_OffsetZ;
+        public int maxLod;
+        public int samples = 2;
+        public float uvDir;
 
-        private bool m_Support;
+        //private bool m_Support;
 
-        public LodMesh(int xCells, int zCells, float xWidth, float zWidth, float offsetX, float offsetZ, int maxLod, float uvDir, int samples)
+        //public LodMesh()
+        //{
+        //    //m_Cells = new LodMeshCell[xCells, zCells];
+        //    //cellSizeX = xCells;
+        //    //cellSizeZ = zCells;
+        //    //widthX = xWidth;
+        //    //widthZ = zWidth;
+        //    //m_OffsetX = offsetX;
+        //    //m_OffsetZ = offsetZ;
+        //    //maxLod = maxLod;
+        //    //samples = samples;
+        //    //uvDir = uvDir;
+
+        //    //if (xCells > 0 && zCells > 0 && zWidth > 0 && xWidth > 0 && maxLod >= 0 && samples >= 1)
+        //    //    m_Support = true;
+        //}
+
+        public void DrawGUI()
         {
-            m_Cells = new LodMeshCell[xCells, zCells];
-            m_XCells = xCells;
-            m_ZCells = zCells;
-            m_XWidth = xWidth;
-            m_ZWidth = zWidth;
-            m_OffsetX = offsetX;
-            m_OffsetZ = offsetZ;
-            m_MaxLod = maxLod;
-            m_Samples = samples;
-            m_UVDir = uvDir;
+            widthX = Mathf.Max(0.01f, EditorGUILayout.FloatField("Width", widthX));
+            widthZ = Mathf.Max(0.01f, EditorGUILayout.FloatField("Height", widthZ));
+            cellSizeX = Mathf.Max(1, EditorGUILayout.IntField("CellWidth", cellSizeX));
+            cellSizeZ = Mathf.Max(1, EditorGUILayout.IntField("CellHeight", cellSizeZ));
+            uvDir = EditorGUILayout.Slider("UV水平方向", uvDir, 0, 360);
+            maxLod = EditorGUILayout.IntSlider("最大Lod", maxLod, 0, 8);
+            samples = EditorGUILayout.IntSlider("不可见三角剔除采样", samples, 1, 4); 
+        }
 
-            if (xCells > 0 && zCells > 0 && zWidth > 0 && xWidth > 0 && maxLod >= 0 && samples >= 1)
-                m_Support = true;
+        public void DrawSceneGUI(GameObject target, Vector2 offset, float rotY, float minHeight, float maxHeight)
+        {
+            UnlitWaterHandles.DrawUnlitWaterArea(
+               target.transform.position + new Vector3(offset.x, 0, offset.y),
+               Quaternion.Euler(0, rotY, 0), new Vector2(widthX, widthZ),
+               new Vector2(minHeight, maxHeight), Color.green);
+
+            UnlitWaterHandles.DrawUnlitWaterCells(
+                    target.transform.position + new Vector3(offset.x, 0, offset.y),
+                    Quaternion.Euler(0, rotY, 0), new Vector2(widthX, widthZ), cellSizeX, cellSizeZ, maxLod);
+
+            float sz = Mathf.Max(widthX, widthZ) / 10;
+            UnlitWaterHandles.DrawDirArrow(
+                target.transform.position + new Vector3(offset.x, 0, offset.y), uvDir, sz,
+                Color.cyan);
+        }
+
+        public void SetSize(Vector2 size)
+        {
+            widthX = size.x;
+            widthZ = size.y;
+        }
+
+        public Vector2 GetSize()
+        {
+            return new Vector2(widthX, widthZ);
         }
 
         public Mesh GenerateMesh(Texture2D texture)
         {
-            if (!m_Support)
+            if (cellSizeX <= 0 || cellSizeZ <= 0 || widthX <= 0 || widthZ <= 0 || maxLod < 0 || samples < 1)
                 return null;
+            m_Cells = new LodMeshCell[cellSizeX, cellSizeZ];
+
             //根据贴图尺寸和单元格数量，计算分配给单个单元格的像素宽高
-            int w = texture.width / m_XCells;
-            int h = texture.height / m_ZCells;
+            int w = texture.width / cellSizeX;
+            int h = texture.height / cellSizeZ;
 
             //计算Lod
-            for (int i = 0; i < m_XCells; i++)
+            for (int i = 0; i < cellSizeX; i++)
             {
-                for (int j = 0; j < m_ZCells; j++)
+                for (int j = 0; j < cellSizeZ; j++)
                 {
-                    m_Cells[i, j] = new LodMeshCell(m_OffsetX, m_OffsetZ, i, j, m_XWidth / m_XCells,
-                        m_ZWidth / m_ZCells);
+                    m_Cells[i, j] = new LodMeshCell(-widthX, -widthZ, i, j, widthX*2 / cellSizeX,
+                        widthZ*2 / cellSizeZ);
                     //为单元格分配指定区域的像素并计算极差和平均值
                     m_Cells[i, j].Calculate(texture, i * w, j * h, w, h);
                     if (m_Cells[i, j].average < kInVisibleColor)
@@ -72,32 +115,32 @@ namespace ASL.UnlitWater
                         continue;
                     }
                     if (m_Cells[i, j].range > kEdgeRange)//如果极差超过0.4，则判定该单元格同时包含水域和陆地，即岸边区域，应该给予最大lod
-                        m_Cells[i, j].lod = m_MaxLod;
+                        m_Cells[i, j].lod = maxLod;
                 }
             }
 
             //根据上一步计算的结果，将最大lod单元格边上的格子设置lod递减
-            for (int i = 0; i < m_XCells; i++)
+            for (int i = 0; i < cellSizeX; i++)
             {
-                for (int j = 0; j < m_ZCells; j++)
+                for (int j = 0; j < cellSizeZ; j++)
                 {
                     LodMeshCell cell = m_Cells[i, j];
                     if (cell.lod == -1)
                         continue;
-                    if (cell.lod != m_MaxLod)
+                    if (cell.lod != maxLod)
                         continue;
-                    for (int lx = m_MaxLod - 1, ly = 0; lx >= 0; lx--, ly++)
+                    for (int lx = maxLod - 1, ly = 0; lx >= 0; lx--, ly++)
                     {
                         for (int lk = 0; lk <= ly; lk++)
                         {
                             if (lk == 0 && lx == 0)
                                 continue;
-                            int clod = m_MaxLod - lx - lk;
+                            int clod = maxLod - lx - lk;
                             //从最大lod处往外递减lod
-                            SetNeighborLOD(i - lx, j - lk, m_XCells, m_ZCells, clod, m_Cells);
-                            SetNeighborLOD(i + lx, j - lk, m_XCells, m_ZCells, clod, m_Cells);
-                            SetNeighborLOD(i - lx, j + lk, m_XCells, m_ZCells, clod, m_Cells);
-                            SetNeighborLOD(i + lx, j + lk, m_XCells, m_ZCells, clod, m_Cells);
+                            SetNeighborLOD(i - lx, j - lk, cellSizeX, cellSizeZ, clod, m_Cells);
+                            SetNeighborLOD(i + lx, j - lk, cellSizeX, cellSizeZ, clod, m_Cells);
+                            SetNeighborLOD(i - lx, j + lk, cellSizeX, cellSizeZ, clod, m_Cells);
+                            SetNeighborLOD(i + lx, j + lk, cellSizeX, cellSizeZ, clod, m_Cells);
                         }
                     }
                 }
@@ -105,14 +148,14 @@ namespace ASL.UnlitWater
 
             //根据Lod生成Mesh
 
-            float p = Mathf.Pow(2, m_MaxLod);
-            float dtx = m_XWidth / m_XCells / p;
-            float dty = m_ZWidth / m_ZCells / p;
+            float p = Mathf.Pow(2, maxLod);
+            float dtx = widthX*2 / cellSizeX / p;
+            float dty = widthZ*2 / cellSizeZ / p;
 
-            MeshVertexData cache = new MeshVertexData(m_XCells * (int)p + 1, m_ZCells * (int)p + 1, dtx, dty, m_OffsetX, m_OffsetZ);
-            for (int i = 0; i < m_XCells; i++)
+            MeshVertexData cache = new MeshVertexData(cellSizeX * (int)p + 1, cellSizeZ * (int)p + 1, dtx, dty, -widthX, -widthZ);
+            for (int i = 0; i < cellSizeX; i++)
             {
-                for (int j = 0; j < m_ZCells; j++)
+                for (int j = 0; j < cellSizeZ; j++)
                 {
                     LodMeshCell cell = m_Cells[i, j];
                     if (cell.lod == -1)
@@ -125,7 +168,7 @@ namespace ASL.UnlitWater
                 }
             }
             //生成网格
-            Mesh mesh = cache.Apply(texture, m_UVDir, m_Samples);
+            Mesh mesh = cache.Apply(texture, uvDir, samples);
             return mesh;
         }
 

@@ -17,22 +17,24 @@ namespace ASL.UnlitWater
         /// <param name="zCells"></param>
         /// <param name="maxLod"></param>
         /// <param name="discardSamples"></param>
-        public static void GenerateMesh(GameObject target, Texture2D tex, Vector2 size, int xCells, int zCells,
-            int maxLod, float uvDir, int discardSamples)
+        public static void GenerateMesh(GameObject target, Texture2D tex, IMeshGenerator generator)
         {
+            if (tex == null)
+                return;
+            if (target == null)
+                return;
+            if (generator == null)
+                return;
             string savePath = EditorUtility.SaveFilePanel("保存Mesh路径", "Assets/", "New Water Mesh", "asset");
             if (string.IsNullOrEmpty(savePath))
                 return;
             savePath = FileUtil.GetProjectRelativePath(savePath);
             if (string.IsNullOrEmpty(savePath))
                 return;
-            if (tex == null)
-                return;
-            if (target == null)
-                return;
-            var unlitMesh = new ASL.UnlitWater.LodMesh(xCells, zCells, size.x*2, size.y*2,
-                -size.x, -size.y, maxLod, uvDir, discardSamples);
-            Mesh mesh = unlitMesh.GenerateMesh(tex);
+            
+            //var unlitMesh = new ASL.UnlitWater.LodMesh(xCells, zCells, size.x*2, size.y*2,
+            //    -size.x, -size.y, maxLod, uvDir, discardSamples);
+            Mesh mesh = generator.GenerateMesh(tex);
             if (!mesh)
                 return;
             MeshFilter mf = target.GetComponent<MeshFilter>();
