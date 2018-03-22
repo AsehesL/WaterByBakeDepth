@@ -65,6 +65,131 @@ namespace ASL.UnlitWater
         {
             if (lod == 0)
             {
+                if (m_LeftLod <= 0 && m_RightLod <= 0 && m_UpLod <= 0 && m_DownLod <= 0)
+                {
+                    cache.AddVertex(new Vector3(m_OffsetX + m_CellX*m_CellWidth, 0, m_OffsetY + m_CellY*m_CellHeight));
+                    cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight+m_CellHeight));
+                    cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth+m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight+m_CellHeight));
+                    cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth+m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight));
+
+                    cache.AddIndex(cache.index);
+                    cache.AddIndex(cache.index+1);
+                    cache.AddIndex(cache.index+2);
+                    cache.AddIndex(cache.index);
+                    cache.AddIndex(cache.index+2);
+                    cache.AddIndex(cache.index+3);
+                    cache.index += 4;
+                }
+                else
+                {
+                    if (m_LeftLod > 0)
+                    {
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth*0.5f, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight*0.5f));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight+m_CellHeight*0.5f));
+
+                        cache.AddIndex(cache.index);
+                        cache.AddIndex(cache.index + 3);
+                        cache.AddIndex(cache.index + 2);
+                        cache.AddIndex(cache.index + 3);
+                        cache.AddIndex(cache.index + 1);
+                        cache.AddIndex(cache.index + 2);
+                        cache.index += 4;
+                    }
+                    else
+                    {
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth * 0.5f, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight * 0.5f));
+
+                        cache.AddIndex(cache.index);
+                        cache.AddIndex(cache.index + 1);
+                        cache.AddIndex(cache.index + 2);
+                        cache.index += 3;
+                    }
+
+                    if (m_UpLod > 0)
+                    {
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth * 0.5f, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight * 0.5f));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth * 0.5f, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight));
+
+                        cache.AddIndex(cache.index);
+                        cache.AddIndex(cache.index + 3);
+                        cache.AddIndex(cache.index + 2);
+                        cache.AddIndex(cache.index + 3);
+                        cache.AddIndex(cache.index + 1);
+                        cache.AddIndex(cache.index + 2);
+                        cache.index += 4;
+                    }
+                    else
+                    {
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth * 0.5f, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight * 0.5f));
+
+                        cache.AddIndex(cache.index);
+                        cache.AddIndex(cache.index + 1);
+                        cache.AddIndex(cache.index + 2);
+                        cache.index += 3;
+                    }
+
+                    if (m_RightLod > 0)
+                    {
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth * 0.5f, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight * 0.5f));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight * 0.5f));
+
+                        cache.AddIndex(cache.index);
+                        cache.AddIndex(cache.index + 1);
+                        cache.AddIndex(cache.index + 3);
+                        cache.AddIndex(cache.index + 1);
+                        cache.AddIndex(cache.index + 2);
+                        cache.AddIndex(cache.index + 3);
+                        cache.index += 4;
+                    }
+                    else
+                    {
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth * 0.5f, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight * 0.5f));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight));
+
+                        cache.AddIndex(cache.index);
+                        cache.AddIndex(cache.index + 1);
+                        cache.AddIndex(cache.index + 2);
+                        cache.index += 3;
+                    }
+
+                    if (m_DownLod > 0)
+                    {
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth * 0.5f, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight * 0.5f));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth * 0.5f, 0, m_OffsetY + m_CellY * m_CellHeight));
+
+                        cache.AddIndex(cache.index);
+                        cache.AddIndex(cache.index + 1);
+                        cache.AddIndex(cache.index + 3);
+                        cache.AddIndex(cache.index + 3);
+                        cache.AddIndex(cache.index + 1);
+                        cache.AddIndex(cache.index + 2);
+                        cache.index += 4;
+                    }
+                    else
+                    {
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth * 0.5f, 0, m_OffsetY + m_CellY * m_CellHeight + m_CellHeight * 0.5f));
+                        cache.AddVertex(new Vector3(m_OffsetX + m_CellX * m_CellWidth + m_CellWidth, 0, m_OffsetY + m_CellY * m_CellHeight));
+
+                        cache.AddIndex(cache.index);
+                        cache.AddIndex(cache.index + 1);
+                        cache.AddIndex(cache.index + 2);
+                        cache.index += 3;
+                    }
+                }
             }
             else
             {
@@ -90,7 +215,8 @@ namespace ASL.UnlitWater
 
         public override void UpdateMesh(MeshVertexData cache)
         {
-            m_Cell.UpdateMesh(cache);
+            if (m_Cell.lod >= 0)
+                m_Cell.UpdateMesh(cache);
         }
     }
 }

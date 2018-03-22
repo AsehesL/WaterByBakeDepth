@@ -27,10 +27,10 @@ namespace ASL.UnlitWater
                     if (m_LodMesh == null)
                         m_LodMesh = new LodMesh();
                     return m_LodMesh;
-                //case MeshGeneratorType.GradationLodMesh:
-                //    if (m_GradationLodMesh == null)
-                //        m_GradationLodMesh = new GradationLodMesh();
-                //    return m_GradationLodMesh;
+                case MeshGeneratorType.GradationLodMesh:
+                    if (m_GradationLodMesh == null)
+                        m_GradationLodMesh = new GradationLodMesh();
+                    return m_GradationLodMesh;
                 case MeshGeneratorType.ModelFile:
                 default:
                     if (m_ModelMesh == null)

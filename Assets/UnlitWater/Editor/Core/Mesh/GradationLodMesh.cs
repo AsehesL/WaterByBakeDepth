@@ -106,13 +106,21 @@ namespace ASL.UnlitWater
                 }
             }
 
-            GradationLodMeshNode[,] lastnodes = new GradationLodMeshLeaf[cellSize, cellSize];
+            GradationLodMeshNode[,] lastnodes = new GradationLodMeshNode[cellSize, cellSize];
+
+            float p = Mathf.Pow(2, maxLod);
+            float dtx = widthX * 2 / cellSize / p;
+            float dty = widthZ * 2 / cellSize / p;
+
+            MeshVertexData cache = new MeshVertexData(cellSize * (int)p + 1, cellSize * (int)p + 1, dtx, dty, -widthX, -widthZ);
 
             for (int i = 0; i < cellSize; i++)
             {
                 for (int j = 0; j < cellSize; j++)
                 {
                     LodMeshCell cell = cells[i, j];
+
+                    lastnodes[i, j] = new GradationLodMeshLeaf(cell);
                     if (cell.lod == -1)
                         continue;
                     int leftLod = i == 0 ? -1 : cells[i - 1, j].lod;
@@ -120,23 +128,21 @@ namespace ASL.UnlitWater
                     int downLod = j == 0 ? -1 : cells[i, j - 1].lod;
                     int upLod = j == cells.GetLength(1) - 1 ? -1 : cells[i, j + 1].lod;
                     cell.SetNeighborLOD(leftLod, rightLod, upLod, downLod);
-
-                    lastnodes[i, j] = new GradationLodMeshLeaf(cell);
                 }
             }
 
             while (cellSize > 1)
             {
-                cellSize = cellSize/2;
+                cellSize = cellSize / 2;
                 GradationLodMeshNode[,] nodes = new GradationLodMeshNode[cellSize, cellSize];
                 for (int i = 0; i < cellSize; i++)
                 {
                     for (int j = 0; j < cellSize; j++)
                     {
-                        GradationLodMeshNode lb = lastnodes[i*2, j*2];
-                        GradationLodMeshNode rb = lastnodes[i * 2+1, j * 2];
-                        GradationLodMeshNode lt = lastnodes[i * 2, j * 2+1];
-                        GradationLodMeshNode rt = lastnodes[i * 2+1, j * 2+1];
+                        GradationLodMeshNode lb = lastnodes[i * 2, j * 2];
+                        GradationLodMeshNode rb = lastnodes[i * 2 + 1, j * 2];
+                        GradationLodMeshNode lt = lastnodes[i * 2, j * 2 + 1];
+                        GradationLodMeshNode rt = lastnodes[i * 2 + 1, j * 2 + 1];
                         GradationLodMeshNode node = new GradationLodMeshNode(lt, lb, rt, rb, -widthX, -widthZ, i, j, widthX * 2 / cellSize,
                         widthZ * 2 / cellSize);
                         nodes[i, j] = node;
@@ -144,12 +150,6 @@ namespace ASL.UnlitWater
                 }
                 lastnodes = nodes;
             }
-
-            float p = Mathf.Pow(2, maxLod);
-            float dtx = widthX * 2 / cellSize / p;
-            float dty = widthZ * 2 / cellSize / p;
-
-            MeshVertexData cache = new MeshVertexData(cellSize * (int)p + 1, cellSize * (int)p + 1, dtx, dty, -widthX, -widthZ);
 
             for (int i = 0; i < cellSize; i++)
             {
