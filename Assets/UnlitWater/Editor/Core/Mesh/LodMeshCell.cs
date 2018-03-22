@@ -31,6 +31,11 @@ namespace ASL.UnlitWater
         private float m_CellWidth;
         private float m_CellHeight;
 
+        private int m_LeftLod;
+        private int m_RightLod;
+        private int m_UpLod;
+        private int m_DownLod;
+
         /// <summary>
         /// 构造单元格
         /// </summary>
@@ -48,6 +53,14 @@ namespace ASL.UnlitWater
             this.m_CellY = cellY;
             this.m_CellWidth = cellWidth;
             this.m_CellHeight = cellHeight;
+        }
+
+        public void SetNeighborLOD(int left, int right, int up, int down)
+        {
+            m_LeftLod = left;
+            m_RightLod = right;
+            m_UpLod = up;
+            m_DownLod = down;
         }
 
         public void Calculate(Texture2D tex, int x, int y, int width, int height)
@@ -77,11 +90,11 @@ namespace ASL.UnlitWater
 
         }
 
-        public void UpdateMesh(MeshVertexData cache, int leftLod, int rightLod, int upLod, int downLod)
+        public void UpdateMesh(MeshVertexData cache)
         {
             int xw = (int)Mathf.Pow(2, lod);
             int yw = xw;
-            UpdateMesh_InternalLod(cache, xw, yw, leftLod, rightLod, upLod, downLod);
+            UpdateMesh_InternalLod(cache, xw, yw, m_LeftLod, m_RightLod, m_UpLod, m_DownLod);
         }
 
         private void UpdateMesh_InternalLod(MeshVertexData cache, int xwidth, int ywidth, int leftLod,

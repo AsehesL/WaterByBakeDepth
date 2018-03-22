@@ -20,8 +20,6 @@ namespace ASL.UnlitWater
         /// </summary>
         public const float kEdgeRange = 0.4f;
 
-        private LodMeshCell[,] m_Cells;
-
         public int cellSizeX;
         public int cellSizeZ;
         public float widthX;
@@ -76,7 +74,7 @@ namespace ASL.UnlitWater
         {
             if (cellSizeX <= 0 || cellSizeZ <= 0 || widthX <= 0 || widthZ <= 0 || maxLod < 0 || samples < 1)
                 return null;
-            m_Cells = new LodMeshCell[cellSizeX, cellSizeZ];
+            LodMeshCell[,] cells = new LodMeshCell[cellSizeX, cellSizeZ];
 
             //根据贴图尺寸和单元格数量，计算分配给单个单元格的像素宽高
             int w = texture.width / cellSizeX;
@@ -87,17 +85,17 @@ namespace ASL.UnlitWater
             {
                 for (int j = 0; j < cellSizeZ; j++)
                 {
-                    m_Cells[i, j] = new LodMeshCell(-widthX, -widthZ, i, j, widthX*2 / cellSizeX,
+                    cells[i, j] = new LodMeshCell(-widthX, -widthZ, i, j, widthX*2 / cellSizeX,
                         widthZ*2 / cellSizeZ);
                     //为单元格分配指定区域的像素并计算极差和平均值
-                    m_Cells[i, j].Calculate(texture, i * w, j * h, w, h);
-                    if (m_Cells[i, j].average < kInVisibleColor)
+                    cells[i, j].Calculate(texture, i * w, j * h, w, h);
+                    if (cells[i, j].average < kInVisibleColor)
                     {
-                        m_Cells[i, j].lod = -1;//如果单元格像素颜色平均值小于0.01，则判定该单元格基本上位于非水域内，则lod设置为-1，将不参与水网格的构建
+                        cells[i, j].lod = -1;//如果单元格像素颜色平均值小于0.01，则判定该单元格基本上位于非水域内，则lod设置为-1，将不参与水网格的构建
                         continue;
                     }
-                    if (m_Cells[i, j].range > kEdgeRange)//如果极差超过0.4，则判定该单元格同时包含水域和陆地，即岸边区域，应该给予最大lod
-                        m_Cells[i, j].lod = maxLod;
+                    if (cells[i, j].range > kEdgeRange)//如果极差超过0.4，则判定该单元格同时包含水域和陆地，即岸边区域，应该给予最大lod
+                        cells[i, j].lod = maxLod;
                 }
             }
 
@@ -106,7 +104,7 @@ namespace ASL.UnlitWater
             {
                 for (int j = 0; j < cellSizeZ; j++)
                 {
-                    LodMeshCell cell = m_Cells[i, j];
+                    LodMeshCell cell = cells[i, j];
                     if (cell.lod == -1)
                         continue;
                     if (cell.lod != maxLod)
@@ -119,10 +117,10 @@ namespace ASL.UnlitWater
                                 continue;
                             int clod = maxLod - lx - lk;
                             //从最大lod处往外递减lod
-                            SetNeighborLOD(i - lx, j - lk, cellSizeX, cellSizeZ, clod, m_Cells);
-                            SetNeighborLOD(i + lx, j - lk, cellSizeX, cellSizeZ, clod, m_Cells);
-                            SetNeighborLOD(i - lx, j + lk, cellSizeX, cellSizeZ, clod, m_Cells);
-                            SetNeighborLOD(i + lx, j + lk, cellSizeX, cellSizeZ, clod, m_Cells);
+                            SetNeighborLOD(i - lx, j - lk, cellSizeX, cellSizeZ, clod, cells);
+                            SetNeighborLOD(i + lx, j - lk, cellSizeX, cellSizeZ, clod, cells);
+                            SetNeighborLOD(i - lx, j + lk, cellSizeX, cellSizeZ, clod, cells);
+                            SetNeighborLOD(i + lx, j + lk, cellSizeX, cellSizeZ, clod, cells);
                         }
                     }
                 }
@@ -139,14 +137,15 @@ namespace ASL.UnlitWater
             {
                 for (int j = 0; j < cellSizeZ; j++)
                 {
-                    LodMeshCell cell = m_Cells[i, j];
+                    LodMeshCell cell = cells[i, j];
                     if (cell.lod == -1)
                         continue;
-                    int leftLod = i == 0 ? -1 : m_Cells[i - 1, j].lod;
-                    int rightLod = i == m_Cells.GetLength(0) - 1 ? -1 : m_Cells[i + 1, j].lod;
-                    int downLod = j == 0 ? -1 : m_Cells[i, j - 1].lod;
-                    int upLod = j == m_Cells.GetLength(1) - 1 ? -1 : m_Cells[i, j + 1].lod;
-                    cell.UpdateMesh(cache, leftLod, rightLod, upLod, downLod);
+                    int leftLod = i == 0 ? -1 : cells[i - 1, j].lod;
+                    int rightLod = i == cells.GetLength(0) - 1 ? -1 : cells[i + 1, j].lod;
+                    int downLod = j == 0 ? -1 : cells[i, j - 1].lod;
+                    int upLod = j == cells.GetLength(1) - 1 ? -1 : cells[i, j + 1].lod;
+                    cell.SetNeighborLOD(leftLod, rightLod, upLod, downLod);
+                    cell.UpdateMesh(cache);
                 }
             }
             //生成网格
