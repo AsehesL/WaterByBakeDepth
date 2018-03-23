@@ -25,6 +25,8 @@ namespace ASL.UnlitWater
         private float m_CellWidth;
         private float m_CellHeight;
 
+        private bool m_Combine;
+
         protected GradationLodMeshNode()
         {
         }
@@ -35,10 +37,12 @@ namespace ASL.UnlitWater
             if (leftTop.lod == 0 && leftBottom.lod == 0 && rightTop.lod == 0 && rightBottom.lod == 0)
             {
                 this.lod = 0;
+                this.m_Combine = true;
             }
             else
             {
                 this.lod = 1;
+                this.m_Combine = false;
             }
             m_LeftBottomNode = leftBottom;
             m_LeftTopNode = leftTop;
@@ -59,11 +63,13 @@ namespace ASL.UnlitWater
             m_RightLod = right;
             m_UpLod = up;
             m_DownLod = down;
+            if (left != 0 || right != 0 || up != 0 || down != 0)
+                lod = 1;
         }
 
         public virtual void UpdateMesh(MeshVertexData cache)
         {
-            if (lod == 0)
+            if (m_Combine)
             {
                 if (m_LeftLod <= 0 && m_RightLod <= 0 && m_UpLod <= 0 && m_DownLod <= 0)
                 {

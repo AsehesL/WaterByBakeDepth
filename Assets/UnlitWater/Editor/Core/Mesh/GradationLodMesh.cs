@@ -148,6 +148,19 @@ namespace ASL.UnlitWater
                         nodes[i, j] = node;
                     }
                 }
+
+                for (int i = 0; i < cellSize; i++)
+                {
+                    for (int j = 0; j < cellSize; j++)
+                    {
+                        int leftLod = i == 0 ? -1 : nodes[i - 1, j].lod;
+                        int rightLod = i == nodes.GetLength(0) - 1 ? -1 : nodes[i + 1, j].lod;
+                        int downLod = j == 0 ? -1 : nodes[i, j - 1].lod;
+                        int upLod = j == nodes.GetLength(1) - 1 ? -1 : nodes[i, j + 1].lod;
+                        nodes[i, j].SetNeighborLOD(leftLod, rightLod, upLod, downLod);
+                    }
+                }
+
                 lastnodes = nodes;
             }
 
@@ -155,11 +168,6 @@ namespace ASL.UnlitWater
             {
                 for (int j = 0; j < cellSize; j++)
                 {
-                    int leftLod = i == 0 ? -1 : lastnodes[i - 1, j].lod;
-                    int rightLod = i == lastnodes.GetLength(0) - 1 ? -1 : lastnodes[i + 1, j].lod;
-                    int downLod = j == 0 ? -1 : lastnodes[i, j - 1].lod;
-                    int upLod = j == lastnodes.GetLength(1) - 1 ? -1 : lastnodes[i, j + 1].lod;
-                    lastnodes[i, j].SetNeighborLOD(leftLod, rightLod, upLod, downLod);
                     lastnodes[i, j].UpdateMesh(cache);
                 }
             }
