@@ -17,9 +17,9 @@ namespace ASL.UnlitWater
         /// </summary>
         LodMesh,
         /// <summary>
-        /// 层次Lod网格
+        /// 四叉树网格
         /// </summary>
-        GradationLodMesh,
+        QuadTreeMesh,
         /// <summary>
         /// 简单格子
         /// </summary>

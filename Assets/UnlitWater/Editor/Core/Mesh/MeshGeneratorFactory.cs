@@ -13,7 +13,7 @@ namespace ASL.UnlitWater
         [SerializeField] private LodMesh m_LodMesh;
         [SerializeField] private SimpleGridMesh m_SimpleGrid;
         [SerializeField] private ModelMesh m_ModelMesh;
-        [SerializeField] private GradationLodMesh m_GradationLodMesh;
+        [SerializeField] private QuadTreeMesh m_QuadTreeMesh;
 
         public IMeshGenerator GetGenerator(MeshGeneratorType type)
         {
@@ -27,10 +27,10 @@ namespace ASL.UnlitWater
                     if (m_LodMesh == null)
                         m_LodMesh = new LodMesh();
                     return m_LodMesh;
-                case MeshGeneratorType.GradationLodMesh:
-                    if (m_GradationLodMesh == null)
-                        m_GradationLodMesh = new GradationLodMesh();
-                    return m_GradationLodMesh;
+                case MeshGeneratorType.QuadTreeMesh:
+                    if (m_QuadTreeMesh == null)
+                        m_QuadTreeMesh = new QuadTreeMesh();
+                    return m_QuadTreeMesh;
                 case MeshGeneratorType.ModelFile:
                 default:
                     if (m_ModelMesh == null)
