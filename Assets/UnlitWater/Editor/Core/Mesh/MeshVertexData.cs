@@ -7,6 +7,15 @@ namespace ASL.UnlitWater
     internal class MeshVertexData
     {
         /// <summary>
+        /// 不可见颜色，小于该值的颜色判断为不可见
+        /// </summary>
+        public const float kInVisibleColor = 0.01f;
+        /// <summary>
+        /// 边缘极差，极差大于该值判断为处于边缘
+        /// </summary>
+        public const float kEdgeRange = 0.4f;
+
+        /// <summary>
         /// 顶点数据
         /// </summary>
         private class VertexData
@@ -33,11 +42,16 @@ namespace ASL.UnlitWater
 
             public void Refresh(Texture2D tex, int samples)
             {
+                if (tex == null)
+                {
+                    color = Color.white;
+                    visible = true;
+                    return;
+                }
                 Color col = GetColor(tex, uv);
                 color = new Color(col.r, 1, 1, 1);
 
-                visible = col.g >= LodMesh.kInVisibleColor;
-                float height = col.r;
+                visible = col.g >= kInVisibleColor;
 
                 for (int i = 1; i < samples; i++)
                 {
@@ -46,25 +60,25 @@ namespace ASL.UnlitWater
                     spuv.x = uv.x + ((float)i) / (m_Width - 1);
                     spuv.y = uv.y + ((float)i) / (m_Width - 1);
                     col = GetColor(tex, spuv);
-                    if (col.g >= LodMesh.kInVisibleColor)
+                    if (col.g >= kInVisibleColor)
                         visible = true;
 
                     spuv.x = uv.x - ((float)i) / (m_Width - 1);
                     spuv.y = uv.y + ((float)i) / (m_Width - 1);
                     col = GetColor(tex, spuv);
-                    if (col.g >= LodMesh.kInVisibleColor)
+                    if (col.g >= kInVisibleColor)
                         visible = true;
 
                     spuv.x = uv.x + ((float)i) / (m_Width - 1);
                     spuv.y = uv.y - ((float)i) / (m_Width - 1);
                     col = GetColor(tex, spuv);
-                    if (col.g >= LodMesh.kInVisibleColor)
+                    if (col.g >= kInVisibleColor)
                         visible = true;
 
                     spuv.x = uv.x - ((float)i) / (m_Width - 1);
                     spuv.y = uv.y - ((float)i) / (m_Width - 1);
                     col = GetColor(tex, spuv);
-                    if (col.g >= LodMesh.kInVisibleColor)
+                    if (col.g >= kInVisibleColor)
                         visible = true;
                 }
             }
@@ -116,8 +130,8 @@ namespace ASL.UnlitWater
             m_IndexList = new List<int>();
             m_Vertexs = new Dictionary<int, VertexData>();
 
-            m_Width = width;
-            m_Height = height;
+            m_Width = width + 1;
+            m_Height = height + 1;
             m_CellSizeX = cellSizeX;
             m_CellSizeY = cellSizeY;
             m_BeginX = beginX;
@@ -137,6 +151,25 @@ namespace ASL.UnlitWater
                 m_Vertexs.Add(k, new VertexData(vertex, m_BeginX, m_BeginY, m_Width, m_Height, m_CellSizeX, m_CellSizeY));
                 //m_Count += 1;
             }
+        }
+
+        /// <summary>
+        /// 添加三角形
+        /// </summary>
+        /// <param name="vertex0"></param>
+        /// <param name="vertex1"></param>
+        /// <param name="vertex2"></param>
+        public void AddTriangle(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2)
+        {
+            this.AddVertex(vertex0);
+            this.AddVertex(vertex1);
+            this.AddVertex(vertex2);
+
+            this.AddIndex(this.index);
+            this.AddIndex(this.index + 1);
+            this.AddIndex(this.index + 2);
+
+            this.index += 3;
         }
 
         /// <summary>

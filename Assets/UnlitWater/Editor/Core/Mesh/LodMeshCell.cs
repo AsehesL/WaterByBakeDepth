@@ -13,16 +13,6 @@ namespace ASL.UnlitWater
         /// </summary>
         public int lod { get; set; }
 
-        /// <summary>
-        /// 极差
-        /// </summary>
-        public float range { get; private set; }
-
-        /// <summary>
-        /// 平均值
-        /// </summary>
-        public float average { get; private set; }
-
         private float m_OffsetX;
         private float m_OffsetY;
         private int m_CellX;
@@ -63,7 +53,7 @@ namespace ASL.UnlitWater
             m_DownLod = down;
         }
 
-        public void Calculate(Texture2D tex, int x, int y, int width, int height)
+        public void Calculate(Texture2D tex, int x, int y, int width, int height, int maxlod)
         {
             float min = 1f;
             float max = 0f;
@@ -84,9 +74,20 @@ namespace ASL.UnlitWater
                 }
             }
 
-            this.range = max - min;
+            float average = sum / (width * height);
 
-            average = sum / (width * height);
+            if (average < MeshVertexData.kInVisibleColor)
+            {
+                lod = -1;//如果单元格像素颜色平均值小于0.01，则判定该单元格基本上位于非水域内，则lod设置为-1，将不参与水网格的构建
+                return;
+            }
+
+            float range = max - min;
+
+            if (range > MeshVertexData.kEdgeRange)
+            {
+                lod = maxlod;//如果极差超过0.4，则判定该单元格同时包含水域和陆地，即岸边区域，应该给予最大lod
+            }
 
         }
 

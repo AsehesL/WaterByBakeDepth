@@ -11,14 +11,7 @@ namespace ASL.UnlitWater
     [System.Serializable]
     internal class LodMesh : IMeshGenerator
     {
-        /// <summary>
-        /// 不可见颜色，小于该值的颜色判断为不可见
-        /// </summary>
-        public const float kInVisibleColor = 0.01f;
-        /// <summary>
-        /// 边缘极差，极差大于该值判断为处于边缘
-        /// </summary>
-        public const float kEdgeRange = 0.4f;
+        
 
         public int cellSizeX;
         public int cellSizeZ;
@@ -88,14 +81,7 @@ namespace ASL.UnlitWater
                     cells[i, j] = new LodMeshCell(-widthX, -widthZ, i, j, widthX*2 / cellSizeX,
                         widthZ*2 / cellSizeZ);
                     //为单元格分配指定区域的像素并计算极差和平均值
-                    cells[i, j].Calculate(texture, i * w, j * h, w, h);
-                    if (cells[i, j].average < kInVisibleColor)
-                    {
-                        cells[i, j].lod = -1;//如果单元格像素颜色平均值小于0.01，则判定该单元格基本上位于非水域内，则lod设置为-1，将不参与水网格的构建
-                        continue;
-                    }
-                    if (cells[i, j].range > kEdgeRange)//如果极差超过0.4，则判定该单元格同时包含水域和陆地，即岸边区域，应该给予最大lod
-                        cells[i, j].lod = maxLod;
+                    cells[i, j].Calculate(texture, i * w, j * h, w, h, maxLod);
                 }
             }
 
@@ -132,7 +118,7 @@ namespace ASL.UnlitWater
             float dtx = widthX*2 / cellSizeX / p;
             float dty = widthZ*2 / cellSizeZ / p;
 
-            MeshVertexData cache = new MeshVertexData(cellSizeX * (int)p + 1, cellSizeZ * (int)p + 1, dtx, dty, -widthX, -widthZ);
+            MeshVertexData cache = new MeshVertexData(cellSizeX * (int)p, cellSizeZ * (int)p, dtx, dty, -widthX, -widthZ);
             for (int i = 0; i < cellSizeX; i++)
             {
                 for (int j = 0; j < cellSizeZ; j++)
