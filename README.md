@@ -42,7 +42,7 @@
 
 ## 二、使用方法：
 
-### 1.如何生成LodMesh:
+### 1.如何生成LodMesh或QuadTreeMesh:
 
 1).点击GameObject/UnlitWater/Create UnlitWater打开编辑器界面
 
