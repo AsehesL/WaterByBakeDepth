@@ -19,6 +19,8 @@ namespace ASL.UnlitWater
 
         public float uvDir;
 
+        public int samples = 2;
+
         public void DrawGUI()
         {
             widthX = Mathf.Max(0.01f, EditorGUILayout.FloatField("Width", widthX));
@@ -26,6 +28,7 @@ namespace ASL.UnlitWater
             cellSizeX = Mathf.Max(1, EditorGUILayout.IntField("CellWidth", cellSizeX));
             cellSizeZ = Mathf.Max(1, EditorGUILayout.IntField("CellHeight", cellSizeZ));
             uvDir = EditorGUILayout.Slider("UV水平方向", uvDir, 0, 360);
+            samples = EditorGUILayout.IntSlider("不可见三角剔除采样", samples, 1, 4);
         }
 
         public void DrawSceneGUI(GameObject target, Vector2 offset, float rotY, float minHeight, float maxHeight)
@@ -48,53 +51,38 @@ namespace ASL.UnlitWater
         {
             if (cellSizeX <= 0 || cellSizeZ <= 0 || widthX <= 0 || widthZ <= 0)
                 return null;
-            List<Vector3> vlist = new List<Vector3>();
-            List<Vector2> ulist = new List<Vector2>();
-            List<int> ilist = new List<int>();
-            List<Color> clist = new List<Color>();
 
             float deltaX = widthX*2/cellSizeX;
             float deltaY = widthZ*2/cellSizeZ;
 
-            float udeltax = 1.0f/cellSizeX;
-            float udeltay = 1.0f/cellSizeZ;
+            MeshVertexData cache = new MeshVertexData(cellSizeX, cellSizeZ, deltaX, deltaY, -widthX, -widthZ);
 
-            for (int i = 0; i <= cellSizeZ; i++)
+            for (int i = 0; i < cellSizeZ; i++)
             {
-                for (int j = 0; j <= cellSizeX; j++)
+                for (int j = 0; j < cellSizeX; j++)
                 {
-                    Vector3 p = new Vector3(-widthX + j*deltaX, 0, -widthZ + i*deltaY);
-                    Vector2 uv = new Vector2(j*udeltax, i*udeltay);
+                    Vector3 p0 = new Vector3(-widthX + j*deltaX, 0, -widthZ + i*deltaY);
+                    Vector3 p1 = new Vector3(-widthX + j*deltaX, 0, -widthZ + i*deltaY + deltaY);
+                    Vector3 p2 = new Vector3(-widthX + j*deltaX + deltaX, 0, -widthZ + i*deltaY + deltaY);
+                    Vector3 p3 = new Vector3(-widthX + j*deltaX + deltaX, 0, -widthZ + i*deltaY);
 
-                    Color col = GetColor(texture, uv);
+                    cache.AddVertex(p0);
+                    cache.AddVertex(p1);
+                    cache.AddVertex(p2);
+                    cache.AddVertex(p3);
 
-                    float sinag = Mathf.Sin(Mathf.Deg2Rad * uvDir);
-                    float cosag = Mathf.Cos(Mathf.Deg2Rad * uvDir);
+                    cache.AddIndex(cache.index);
+                    cache.AddIndex(cache.index + 1);
+                    cache.AddIndex(cache.index + 2);
+                    cache.AddIndex(cache.index);
+                    cache.AddIndex(cache.index + 2);
+                    cache.AddIndex(cache.index + 3);
 
-                    uv = new Vector2(uv.x * cosag - uv.y * sinag, uv.x * sinag + uv.y * cosag);
-
-                    vlist.Add(p);
-                    ulist.Add(uv);
-                    clist.Add(col);
-                    if (i != cellSizeZ && j != cellSizeX)
-                    {
-                        ilist.Add((i*(cellSizeX + 1))+j);
-                        ilist.Add(((i+1)*(cellSizeX + 1))+j+1);
-                        ilist.Add((i*(cellSizeX + 1))+j+1);
-
-                        ilist.Add((i*(cellSizeX + 1))+j);
-                        ilist.Add(((i+1)*(cellSizeX + 1))+j);
-                        ilist.Add(((i+1)*(cellSizeX + 1))+j+1);
-                    }
+                    cache.index += 4;
                 }
             }
 
-            Mesh mesh = new Mesh();
-            mesh.SetVertices(vlist);
-            mesh.SetUVs(0, ulist);
-            mesh.SetTriangles(ilist, 0);
-            mesh.SetColors(clist);
-            mesh.RecalculateNormals();
+            Mesh mesh = cache.Apply(texture, uvDir, samples);
 
             return mesh;
         }
