@@ -121,7 +121,11 @@ namespace ASL.UnlitWater
         public static void DrawDirArrow(Vector3 position, float angle, float size, Color color)
         {
             Handles.color = color;
-            Handles.ArrowHandleCap(0, position, Quaternion.Euler(0, angle+90, 0), size, EventType.Repaint);
+#if UNITY_5_5
+            Handles.ArrowHandleCap(0, position, Quaternion.Euler(0, angle + 90, 0), size, EventType.Repaint);
+#else
+            Handles.ArrowCap(0, position, Quaternion.Euler(0, angle + 90, 0), size);
+#endif
         }
     }
 }

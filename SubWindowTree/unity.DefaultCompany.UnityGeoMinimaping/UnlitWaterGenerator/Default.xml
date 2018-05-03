@@ -1,0 +1,20 @@
+<SubWindowTree Layout="Default" TreeID="1021103249">
+  <SubWindowNode Weight="1" Depth="0" Horizontal="True" Index="0">
+    <SubWindowNode Weight="0.5584402" Depth="1" Horizontal="False" Index="0">
+      <SubWindowLeaf Weight="0.5" Depth="2" Horizontal="True" Index="0">
+        <SubWindow ID="__METHOD__UnlitWaterGenerator.DrawBakeSetting" Index="0" />
+      </SubWindowLeaf>
+      <SubWindowLeaf Weight="0.5" Depth="2" Horizontal="True" Index="1">
+        <SubWindow ID="__METHOD__UnlitWaterGenerator.DrawSetting" Index="0" />
+      </SubWindowLeaf>
+    </SubWindowNode>
+    <SubWindowNode Weight="0.4415598" Depth="1" Horizontal="False" Index="1">
+      <SubWindowLeaf Weight="0.5" Depth="2" Horizontal="True" Index="0">
+        <SubWindow ID="__METHOD__UnlitWaterGenerator.DrawPreview" Index="0" />
+      </SubWindowLeaf>
+      <SubWindowLeaf Weight="0.5" Depth="2" Horizontal="True" Index="1">
+        <SubWindow ID="__METHOD__UnlitWaterGenerator.DrawMeshSetting" Index="0" />
+      </SubWindowLeaf>
+    </SubWindowNode>
+  </SubWindowNode>
+</SubWindowTree>
