@@ -140,11 +140,16 @@ namespace ASL.UnlitWater
         /// <param name="depthPower">深度增强</param>
         /// <param name="tex">目标贴图</param>
         public static void RenderDepthTexture(GameObject target, Vector2 offset, Vector2 size, Quaternion rotation,
-            float maxHeight, float minHeight, float maxDepth, float depthPower, ref Texture2D tex)
+            float maxHeight, float minHeight, ITextureRenderer renderer, ref Texture2D tex)
         {
             if (target == null)
             {
                 EditorUtility.DisplayDialog("错误", "请先设置目标网格", "确定");
+                return;
+            }
+            if (renderer == null)
+            {
+                Debug.LogError("错误，ITextureRenderer不能为空");
                 return;
             }
 
@@ -167,11 +172,8 @@ namespace ASL.UnlitWater
             target.SetActive(false);
 
             newCam.targetTexture = rt;
-            Shader.SetGlobalFloat("depth", maxDepth);
-            Shader.SetGlobalFloat("power", depthPower);
-            Shader.SetGlobalFloat("height", target.transform.position.y);
-            Shader.SetGlobalFloat("minheight", minHeight);
-            newCam.RenderWithShader(Shader.Find("Hidden/DepthMapRenderer"), "RenderType");
+
+            rt = renderer.Render(newCam, target.transform.position.y, minHeight);
 
             tex = new Texture2D(rt.width, rt.height);
             tex.hideFlags = HideFlags.HideAndDontSave;
