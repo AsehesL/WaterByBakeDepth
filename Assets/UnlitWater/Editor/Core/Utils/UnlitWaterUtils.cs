@@ -183,7 +183,7 @@ namespace ASL.UnlitWater
             tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
             tex.Apply();
             RenderTexture.active = tp;
-
+            
             Object.DestroyImmediate(rt);
             Object.DestroyImmediate(newCam.gameObject);
 

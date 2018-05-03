@@ -45,9 +45,9 @@
 
 			float4 frag (v2f i) : SV_Target
 			{
-				float4 col = tex2D(_MainTex, i.uv.xy)*0.5;
-				col += tex2D(_MainTex, i.uv.xy + i.uv.zw)*0.175;
-				col += tex2D(_MainTex, i.uv.xy - i.uv.zw)*0.175;
+				float4 col = tex2D(_MainTex, i.uv.xy)*0.7;
+				col += tex2D(_MainTex, i.uv.xy + i.uv.zw)*0.2;
+				col += tex2D(_MainTex, i.uv.xy - i.uv.zw)*0.2;
 				col += tex2D(_MainTex, i.uv.xy + i.uv.zw * 2)*0.075;
 				col += tex2D(_MainTex, i.uv.xy - i.uv.zw * 2)*0.075;
 				
@@ -90,9 +90,9 @@
 
 			float4 frag(v2f i) : SV_Target
 			{
-				float4 col = tex2D(_MainTex, i.uv.xy)*0.5;
-				col += tex2D(_MainTex, i.uv.xy + i.uv.zw)*0.175;
-				col += tex2D(_MainTex, i.uv.xy - i.uv.zw)*0.175;
+				float4 col = tex2D(_MainTex, i.uv.xy)*0.7;
+				col += tex2D(_MainTex, i.uv.xy + i.uv.zw)*0.2;
+				col += tex2D(_MainTex, i.uv.xy - i.uv.zw)*0.2;
 				col += tex2D(_MainTex, i.uv.xy + i.uv.zw * 2)*0.075;
 				col += tex2D(_MainTex, i.uv.xy - i.uv.zw * 2)*0.075;
 
@@ -138,8 +138,8 @@
 
 				float4 mix = tex2D(_Mix, i.uv);
 
-				col.r = mix.g;
-				col.b = mix.g;
+				col.r = saturate(mix.g);
+				col.b = saturate(mix.g);
 
 				return col;
 			}
