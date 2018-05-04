@@ -3,6 +3,8 @@
 	Properties
 	{
 		_Offset ("Offset", float) = 0
+		_EdgeBeginWidth ("EdgeBeginWidth", float) = 0
+		_Power ("Power", float) = 0
 		_Mix ("Mix", 2D) = "black" {}
 		_MainTex ("Texture", 2D) = "white" {}
 	}
@@ -45,9 +47,9 @@
 
 			float4 frag (v2f i) : SV_Target
 			{
-				float4 col = tex2D(_MainTex, i.uv.xy)*0.7;
-				col += tex2D(_MainTex, i.uv.xy + i.uv.zw)*0.2;
-				col += tex2D(_MainTex, i.uv.xy - i.uv.zw)*0.2;
+				float4 col = tex2D(_MainTex, i.uv.xy)*0.5;
+				col += tex2D(_MainTex, i.uv.xy + i.uv.zw)*0.175;
+				col += tex2D(_MainTex, i.uv.xy - i.uv.zw)*0.175;
 				col += tex2D(_MainTex, i.uv.xy + i.uv.zw * 2)*0.075;
 				col += tex2D(_MainTex, i.uv.xy - i.uv.zw * 2)*0.075;
 				
@@ -90,9 +92,9 @@
 
 			float4 frag(v2f i) : SV_Target
 			{
-				float4 col = tex2D(_MainTex, i.uv.xy)*0.7;
-				col += tex2D(_MainTex, i.uv.xy + i.uv.zw)*0.2;
-				col += tex2D(_MainTex, i.uv.xy - i.uv.zw)*0.2;
+				float4 col = tex2D(_MainTex, i.uv.xy)*0.5;
+				col += tex2D(_MainTex, i.uv.xy + i.uv.zw)*0.175;
+				col += tex2D(_MainTex, i.uv.xy - i.uv.zw)*0.175;
 				col += tex2D(_MainTex, i.uv.xy + i.uv.zw * 2)*0.075;
 				col += tex2D(_MainTex, i.uv.xy - i.uv.zw * 2)*0.075;
 
@@ -121,6 +123,9 @@
 				float4 vertex : SV_POSITION;
 			};
 
+			float _EdgeBeginWidth;
+			float _Power;
+
 			sampler2D _Mix;
 			sampler2D _MainTex;
 
@@ -136,10 +141,11 @@
 			{
 				float4 col = tex2D(_MainTex, i.uv);
 
-				float4 mix = tex2D(_Mix, i.uv);
+				float mix = pow(tex2D(_Mix, i.uv).g, _Power);
+				mix = saturate((mix - _EdgeBeginWidth) / (1 - _EdgeBeginWidth));
 
-				col.r = saturate(mix.g);
-				col.b = saturate(mix.g);
+				col.r = saturate(col.g*mix);
+				col.b = saturate(col.g*mix);
 
 				return col;
 			}

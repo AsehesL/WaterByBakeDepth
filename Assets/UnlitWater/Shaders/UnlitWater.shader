@@ -4,7 +4,8 @@
 	{
 		_FoamTex("泡沫贴图(R:海浪泡沫,G:岸边泡沫,B:海浪扰动)", 2D) = "white" {}
 		[Normal]_NormalTex("法线贴图", 2D) = "bump" {}
-		_WaveTex("海浪贴图(R:海浪遮罩,G:海浪渐变)", 2D) = "white" {}
+		_WaveMask ("海浪遮罩", 2D) = "white" {}
+		_WaveTex("海浪渐变", 2D) = "white" {}
 		_Gradient("海水颜色渐变", 2D) = "white" {}
 		_Sky("反射天空盒", cube) = "" {}
 
@@ -56,6 +57,7 @@
 			float4 _FoamTex_ST;
 
 			sampler2D _WaveTex;
+			sampler2D _WaveMask;
 
 			half4 _Speed;
 			
@@ -137,7 +139,7 @@
 				//计算海浪和岸边泡沫
 				fixed wave1 = tex2D(_WaveTex, float2(i.color.r + _WaveParams.y + _WaveParams.x*sin(_Time.x*_Speed.y + _WaveParams.z*foam.b), 0)).r;
 				fixed wave2 = tex2D(_WaveTex, float2(i.color.r + _WaveParams.y + _WaveParams.x*cos(_Time.x*_Speed.y + _WaveParams.z*foam.b), 0)).r;
-				fixed waveAlpha = tex2D(_WaveTex, float2(i.color.r, 0)).g;
+				fixed waveAlpha = tex2D(_WaveMask, float2(i.color.r, 0)).r;
 
 				fixed sfadein = 1 - saturate((_FoamParams.x - i.color.r) / _FoamParams.x);
 				fixed sfadeout = 1 - saturate((i.color.r - _FoamParams.y) / _FoamParams.z);

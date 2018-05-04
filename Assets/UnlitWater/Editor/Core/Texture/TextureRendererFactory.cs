@@ -10,7 +10,7 @@ namespace ASL.UnlitWater
         [SerializeField] private EdgeBlurTexture m_EdgeBlurTextureRenderer;
         [SerializeField] private FakeDepthTexture m_FakeDepthTextureRenderer;
 
-        public ITextureRenderer GetRenderer(TextureRendererType type)
+        public TextureRenderer GetRenderer(TextureRendererType type)
         {
             switch (type)
             {

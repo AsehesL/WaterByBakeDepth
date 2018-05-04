@@ -51,7 +51,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
         }   
     }
 
-    private ITextureRenderer textureRenderer
+    private TextureRenderer textureRenderer
     {
         get
         {
@@ -69,7 +69,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
 
 
     [MenuItem("GameObject/UnlitWater/Create UnlitWater", false, 2500)]
-    static void Init()
+    static void InitWindow()
     {
         UnlitWaterGenerator win = UnlitWaterGenerator.CreateWindow<UnlitWaterGenerator>();
         win.titleContent = new GUIContent("Water编辑器");
@@ -194,7 +194,7 @@ public class UnlitWaterGenerator : MDIEditorWindow
 
         GUILayout.BeginArea(new Rect(0, 160, rect.width - 10, rect.height - 160));
 
-        ITextureRenderer renderer = textureRenderer;
+        TextureRenderer renderer = textureRenderer;
         if (renderer != null)
             renderer.DrawGUI();
 
@@ -202,9 +202,12 @@ public class UnlitWaterGenerator : MDIEditorWindow
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("渲染", GUIStyleCache.GetStyle("ButtonLeft"), GUILayout.Width(rect.width*0.5f-5)))
         {
-                        Vector2 size = m_MeshGeneratorFactory.GetSize(m_MeshGeneratorType);
-                        UnlitWaterUtils.RenderDepthTexture(m_TargetGameObject, m_LocalCenter, size,
-                            Quaternion.Euler(90, m_RotY, 0), m_MaxHeight, m_MinHeight, renderer, ref m_Texture);
+            if (renderer != null)
+            {
+                Vector2 size = m_MeshGeneratorFactory.GetSize(m_MeshGeneratorType);
+                renderer.RenderDepthTexture(m_TargetGameObject, m_LocalCenter, size,
+                    Quaternion.Euler(90, m_RotY, 0), m_MaxHeight, m_MinHeight, ref m_Texture);
+            }
         }
         GUI.enabled = m_Texture != null && m_Painter.paintVertexChannel == UnlitWaterPainter.Channel.None && guienable;
         if (m_MeshGeneratorType != MeshGeneratorType.ModelFile)

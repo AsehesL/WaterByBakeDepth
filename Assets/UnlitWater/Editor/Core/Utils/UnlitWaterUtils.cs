@@ -127,68 +127,20 @@ namespace ASL.UnlitWater
             }
         }
 
-        /// <summary>
-        /// 渲染深度图
-        /// </summary>
-        /// <param name="target">摄像机参考点目标物体</param>
-        /// <param name="offset">坐标偏移</param>
-        /// <param name="size">渲染区域大小</param>
-        /// <param name="rotation">旋转角度</param>
-        /// <param name="maxHeight">最大高度</param>
-        /// <param name="minHeight">最小高度</param>
-        /// <param name="maxDepth">最大深度</param>
-        /// <param name="depthPower">深度增强</param>
-        /// <param name="tex">目标贴图</param>
-        public static void RenderDepthTexture(GameObject target, Vector2 offset, Vector2 size, Quaternion rotation,
-            float maxHeight, float minHeight, ITextureRenderer renderer, ref Texture2D tex)
+        public static Texture2D RenderTextureToTexture2D(RenderTexture renderTexture)
         {
-            if (target == null)
-            {
-                EditorUtility.DisplayDialog("错误", "请先设置目标网格", "确定");
-                return;
-            }
-            if (renderer == null)
-            {
-                Debug.LogError("错误，ITextureRenderer不能为空");
-                return;
-            }
-
-            Camera newCam = new GameObject("[TestCamera]").AddComponent<Camera>();
-            newCam.clearFlags = CameraClearFlags.SolidColor;
-            newCam.backgroundColor = Color.black;
-            newCam.orthographic = true;
-            newCam.aspect = size.x/size.y;
-            newCam.orthographicSize = size.y;
-            newCam.nearClipPlane = -maxHeight;
-            newCam.farClipPlane = minHeight;
-            newCam.transform.position = target.transform.position + new Vector3(offset.x, 0, offset.y);
-            newCam.transform.rotation = rotation;
-            newCam.enabled = false;
-
-            RenderTexture rt = new RenderTexture(4096, 4096, 24);
-            rt.hideFlags = HideFlags.HideAndDontSave;
-
-            bool isMeshActive = target.activeSelf;
-            target.SetActive(false);
-
-            newCam.targetTexture = rt;
-
-            rt = renderer.Render(newCam, target.transform.position.y, minHeight);
-
-            tex = new Texture2D(rt.width, rt.height);
+            Texture2D tex = new Texture2D(renderTexture.width, renderTexture.height);
             tex.hideFlags = HideFlags.HideAndDontSave;
 
             RenderTexture tp = RenderTexture.active;
-            RenderTexture.active = rt;
-            tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+            RenderTexture.active = renderTexture;
+            tex.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
             tex.Apply();
             RenderTexture.active = tp;
-            
-            Object.DestroyImmediate(rt);
-            Object.DestroyImmediate(newCam.gameObject);
 
-            target.SetActive(isMeshActive);
+            tex.wrapMode = TextureWrapMode.Clamp;
 
+            return tex;
         }
 
         /// <summary>

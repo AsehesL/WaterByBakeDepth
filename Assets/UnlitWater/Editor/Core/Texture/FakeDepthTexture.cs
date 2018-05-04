@@ -5,12 +5,12 @@ using UnityEditor;
 namespace ASL.UnlitWater
 {
     [System.Serializable]
-    internal class FakeDepthTexture : ITextureRenderer
+    internal class FakeDepthTexture : TextureRenderer
     {
         public float maxDepth = 1;
         public float depthPower = 1;
 
-        public void DrawGUI()
+        public override void DrawGUI()
         {
             maxDepth = Mathf.Max(0,
            EditorGUILayout.FloatField(new GUIContent("最大深度范围", EditorGUIUtility.FindTexture("console.erroricon.inactive.sml"), "控制渲染的最大深度范围，默认为1"),
@@ -20,14 +20,24 @@ namespace ASL.UnlitWater
                    depthPower));
         }
 
-        public RenderTexture Render(Camera camera, float height, float minHeight)
+        protected override void Render(Camera camera, float height, float minHeight, ref Texture2D tex)
         {
+            RenderTexture rt = new RenderTexture(4096, 4096, 24);
+            rt.hideFlags = HideFlags.HideAndDontSave;
+
+            camera.targetTexture = rt;
+
             Shader.SetGlobalFloat("depth", maxDepth);
             Shader.SetGlobalFloat("power", depthPower);
             Shader.SetGlobalFloat("height", height);
             Shader.SetGlobalFloat("minheight", minHeight);
             camera.RenderWithShader(Shader.Find("Hidden/DepthMapRenderer"), "RenderType");
-            return camera.targetTexture;
+
+            tex = UnlitWaterUtils.RenderTextureToTexture2D(rt);
+
+            camera.targetTexture = null;
+            Object.DestroyImmediate(rt);
+            
         }
     }
 }
